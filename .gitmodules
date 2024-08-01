@@ -1,0 +1,10 @@
+[submodule "thirdparty/eastl"]
+	path = thirdparty/eastl
+	url = https://git.darc.icu/DarcJC/eastl.git
+[submodule "thirdparty/spdlog"]
+	path = thirdparty/spdlog
+	url = https://github.com/gabime/spdlog.git
+	branch = v2.x
+[submodule "thirdparty/Vulkan-Headers"]
+	path = thirdparty/Vulkan-Headers
+	url = https://github.com/KhronosGroup/Vulkan-Headers.git
