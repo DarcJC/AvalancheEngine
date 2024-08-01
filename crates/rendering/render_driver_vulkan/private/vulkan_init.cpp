@@ -3,17 +3,19 @@
 #include "vulkan_context.h"
 
 #include "render_enums.h"
-#include "EASTL/algorithm.h"
-#include "EASTL/sort.h"
-#include "EASTL/unordered_map.h"
-#include "EASTL/vector.h"
+#include <unordered_map>
 
 using namespace avalanche::rendering;
+
+#if defined(AVALANCHE_BUILD_SHARED)
+// Expand vulkan dynamic dispatcher
+VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
+#endif
 
 struct DeviceComparator {
     EGPUPowerPreference power_preference;
 
-    static inline eastl::unordered_map<vk::PhysicalDeviceType, uint8_t> type_scores {
+    static inline std::unordered_map<vk::PhysicalDeviceType, uint8_t> type_scores {
         { vk::PhysicalDeviceType::eOther, 0 },
         { vk::PhysicalDeviceType::eCpu, 1 },
         { vk::PhysicalDeviceType::eIntegratedGpu, 2 },
@@ -37,7 +39,7 @@ vk::PhysicalDevice pick_physical_device(vk::Instance instance, EGPUPowerPreferen
 
     AVALANCHE_CHECK(!devices.empty(), "Can't find render devices");
 
-    eastl::quick_sort(devices.begin(), devices.end(), DeviceComparator{preference});
+    std::sort(devices.begin(), devices.end(), DeviceComparator{preference});
     return devices.front();
 }
 

@@ -1,4 +1,4 @@
-#include "Logger.h"
+#include "logger.h"
 
 #include "spdlog/spdlog.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
@@ -39,20 +39,12 @@ namespace avalanche::core {
             m_composited_logger = std::make_shared<spdlog::logger>("AvalancheLogger", spdlog::sinks_init_list { m_console_log_sink, m_file_log_sink });
         }
 
-        void log(LogLevel level, eastl::string_view msg) override {
-            log(level, std::string_view(msg.begin(), msg.end()));
-        }
-
         void log(LogLevel level, std::string_view msg) override {
             m_composited_logger->log(convet_log_level_to_spdlog(level), msg);
         }
 
         void log(LogLevel level, std::string_view msg, const SourceLoc &source_loc) override {
             m_composited_logger->log(spdlog::source_loc(source_loc.filename, source_loc.line, source_loc.function_name), convet_log_level_to_spdlog(level), msg);
-        }
-
-        void log(LogLevel level, eastl::string_view msg, const SourceLoc &source_loc) override {
-            log(level, std::string_view(msg.begin(), msg.end()), source_loc);
         }
 
         void trigger_breakpoint() override {

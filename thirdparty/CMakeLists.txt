@@ -5,5 +5,3 @@ endif ()
 
 set(SPDLOG_BUILD_SHARED OFF)
 add_subdirectory(spdlog)
-
-add_subdirectory(eastl)

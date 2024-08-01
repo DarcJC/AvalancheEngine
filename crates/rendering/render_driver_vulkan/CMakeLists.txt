@@ -6,4 +6,14 @@ avalanche_target(
 )
 
 target_link_libraries(avalanche_render_driver_vulkan PUBLIC avalanche::core)
-target_link_libraries(avalanche_render_driver_vulkan PRIVATE Vulkan-Headers avalanche::render_device)
+target_link_libraries(avalanche_render_driver_vulkan PRIVATE avalanche::render_device)
+
+if (TARGET Vulkan-Headers)
+    target_link_libraries(avalanche_render_driver_vulkan PRIVATE Vulkan-Headers)
+elseif (TARGET Vulkan::Headers)
+    target_link_libraries(avalanche_render_driver_vulkan PRIVATE Vulkan::Headers)
+else ()
+    message(FATAL_ERROR "Vulkan-Headers target not found")
+endif ()
+
+target_compile_definitions(avalanche_render_driver_vulkan PRIVATE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC)

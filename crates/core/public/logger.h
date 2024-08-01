@@ -6,8 +6,6 @@
 #include <cstddef>
 #include <string_view>
 #include <format>
-#include "EASTL/string_view.h"
-#include "EASTL/type_traits.h"
 #include "delegate.h"
 #include "polyfill.h"
 
@@ -46,10 +44,6 @@ namespace avalanche::core {
 
         static ILogManager& get();
 
-        virtual void log(LogLevel level, eastl::string_view msg) = 0;
-
-        virtual void log(LogLevel level, eastl::string_view msg, const SourceLoc& source_loc) = 0;
-
         virtual void log(LogLevel level, std::string_view msg) = 0;
 
         virtual void log(LogLevel level, std::string_view msg, const SourceLoc& source_loc) = 0;
@@ -59,44 +53,44 @@ namespace avalanche::core {
     public:
         template <typename... Args>
         void log(LogLevel level, std::format_string<Args...> fmt, Args&&... args) {
-            auto msg = std::format(fmt, eastl::forward<Args>(args)...);
+            auto msg = std::format(fmt, std::forward<Args>(args)...);
             log(level, msg);
         }
 
         template <typename... Args>
         void log(const SourceLoc& source_loc, LogLevel level, std::format_string<Args...> fmt, Args&&... args) {
-            auto msg = std::format(fmt, eastl::forward<Args>(args)...);
+            auto msg = std::format(fmt, std::forward<Args>(args)...);
             log(level, msg, source_loc);
         }
 
         template <typename... Args>
         inline void trace(std::format_string<Args...> fmt, Args &&... args) {
-            log(LogLevel::Trace, fmt, eastl::forward<Args>(args)...);
+            log(LogLevel::Trace, fmt, std::forward<Args>(args)...);
         }
 
         template <typename... Args>
         inline void debug(std::format_string<Args...> fmt, Args &&... args) {
-            log(LogLevel::Debug, fmt, eastl::forward<Args>(args)...);
+            log(LogLevel::Debug, fmt, std::forward<Args>(args)...);
         }
 
         template <typename... Args>
         inline void info(std::format_string<Args...> fmt, Args &&... args) {
-            log(LogLevel::Info, fmt, eastl::forward<Args>(args)...);
+            log(LogLevel::Info, fmt, std::forward<Args>(args)...);
         }
 
         template <typename... Args>
         inline void warn(std::format_string<Args...> fmt, Args &&... args) {
-            log(LogLevel::Warn, fmt, eastl::forward<Args>(args)...);
+            log(LogLevel::Warn, fmt, std::forward<Args>(args)...);
         }
 
         template <typename... Args>
         inline void error(std::format_string<Args...> fmt, Args &&... args) {
-            log(LogLevel::Error, fmt, eastl::forward<Args>(args)...);
+            log(LogLevel::Error, fmt, std::forward<Args>(args)...);
         }
 
         template <typename... Args>
         inline void critical(std::format_string<Args...> fmt, Args &&... args) {
-            log(LogLevel::Critical, fmt, eastl::forward<Args>(args)...);
+            log(LogLevel::Critical, fmt, std::forward<Args>(args)...);
         }
     };
 

@@ -36,8 +36,8 @@ namespace avalanche::core {
     public:
         using DelegateType = std::function<R(Args...)>;
 
-        void bind(const DelegateType& delegate) {
-            this->delegate = delegate;
+        void bind(const DelegateType& delegate_in) {
+            this->delegate = delegate_in;
         }
 
         void unbind() {

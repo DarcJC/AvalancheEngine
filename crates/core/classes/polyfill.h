@@ -43,3 +43,15 @@
 #   define AVALANCHE_LIKELY_BRANCH [[likely]]
 #endif
 // === Branch ===
+
+// === Decl ===
+#if !defined(AVALANCHE_CDECL)
+#   if defined(_MSC_VER)
+#       define AVALANCHE_CDECL __cdecl
+#   elif defined(__GUNC__)
+#       define AVALANCHE_CDECL __attribute__((__cdecl__))
+#   else
+#       define AVALANCHE_CDECL
+#   endif
+#endif
+// === Decl ===

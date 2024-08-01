@@ -1,6 +1,3 @@
-[submodule "thirdparty/eastl"]
-	path = thirdparty/eastl
-	url = https://git.darc.icu/DarcJC/eastl.git
 [submodule "thirdparty/spdlog"]
 	path = thirdparty/spdlog
 	url = https://github.com/gabime/spdlog.git
