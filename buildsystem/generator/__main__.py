@@ -29,11 +29,15 @@ def main():
         print(f"error: subcommand '{command}' not found")
         exit(1)
     else:
-        command_storage[command]()
+        try:
+            command_storage[command]()
+        except Exception as err:
+            print(f"error: error occurred while performing '{command}':\n\t{err.with_traceback()}")
+            exit(2)
 
 
 @subcommand('clean')
-def clean():
+def clean() -> int:
     pass
 
 
