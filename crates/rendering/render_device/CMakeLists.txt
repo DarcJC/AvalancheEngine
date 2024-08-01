@@ -1,0 +1,8 @@
+
+avalanche_target(
+        NAME render_device
+        STATIC_LIBRARY
+        SRCS "private/render_device.cpp"
+)
+
+target_link_libraries(avalanche_render_device PUBLIC avalanche::core)
