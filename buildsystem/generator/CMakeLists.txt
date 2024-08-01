@@ -1,7 +1,7 @@
 
 add_custom_target(avalanche_generator_clean_up
         WORKING_DIRECTORY "${AVALANCHE_CMAKE_ROOT_DIR}/buildsystem"
-        COMMAND "${Python3_EXECUTABLE}" -m generator --clean
+        COMMAND "${Python3_EXECUTABLE}" -m generator clean --base-dir "${CMAKE_BINARY_DIR}"
         COMMENT "Cleaning up generated files"
 )
 
@@ -25,7 +25,7 @@ function(avalanche_generate_binding)
         add_custom_command(
                 TARGET ${PARSED_ARGS_TARGET}
                 OUTPUT "${header_path}" "${source_path}"
-                COMMAND "${Python3_EXECUTABLE}" -m generator --input "${src}" --out-header "${header_path}" --out-source "${source_path}"
+                COMMAND "${Python3_EXECUTABLE}" -m generator binding --base-dir "${CMAKE_BINARY_DIR}" --input "${src}" --out-header "${header_path}" --out-source "${source_path}"
                 DEPENDS "avalanche_generator_clean_up"
                 WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/Generator"
         )
