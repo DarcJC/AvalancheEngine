@@ -43,6 +43,9 @@ function(avalanche_target)
     target_compile_definitions(${target_name} PRIVATE
             "AVALANCHE_${PARSED_ARGS_NAME}_EXPORTS"
             "${TARGET_NAME_UPPER}_EXPORTS"
+            "AVALANCHE_PROJECT_VERSION_MAJOR=${PROJECT_VERSION_MAJOR}"
+            "AVALANCHE_PROJECT_VERSION_MINOR=${PROJECT_VERSION_MINOR}"
+            "AVALANCHE_PROJECT_VERSION_PATCH=${PROJECT_VERSION_PATCH}"
     )
 
     set(AVALANCHE_TARGET_${NAME_UPPER} PARENT_SCOPE ${target_name})

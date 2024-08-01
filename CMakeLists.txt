@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.28)
 
 add_subdirectory(thirdparty)
 
-project(AvalancheEngine LANGUAGES C CXX)
+project(AvalancheEngine LANGUAGES C CXX VERSION 0.0.1)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
