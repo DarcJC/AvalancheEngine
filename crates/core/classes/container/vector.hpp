@@ -305,6 +305,13 @@ namespace avalanche {
             }
         }
 
+        void ensure_capacity(size_type new_capacity) {
+            if (m_capacity >= new_capacity) {
+                return;
+            }
+            resize_internal(new_capacity);
+        }
+
         void sort(std::function<bool(const_reference_type,const_reference_type)> comparator) {
             std::sort(begin(), end(), comparator);
         }
