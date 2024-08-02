@@ -6,4 +6,13 @@ namespace avalanche::rendering {
         LowPower,
         HighPerformance,
     };
+
+    enum class EQueueType {
+        Graphics,
+        Compute,
+        Transfer,
+        SparseBinding,
+        VideoDecode,
+        VideoEncode,
+    };
 }

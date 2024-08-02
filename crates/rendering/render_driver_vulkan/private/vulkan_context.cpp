@@ -1,4 +1,5 @@
 #include "vulkan_context.h"
+#include "vulkan_macro.h"
 #include "GLFW/glfw3.h"
 
 namespace avalanche::rendering::vulkan {
@@ -54,14 +55,5 @@ namespace avalanche::rendering::vulkan {
         }
 
         return res;
-    }
-
-    Context::Context(const DeviceFeatures &required_features)
-            : m_features(required_features) {
-        if (required_features.display) {
-            AVALANCHE_CHECK(glfwVulkanSupported(), "GLFW said vulkan isn't supported to using display functionality");
-        }
-        m_extensions_and_layers = ExtensionAndLayer::create_from_features(m_features);
-        m_instance = create_instance();
     }
 }

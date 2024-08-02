@@ -1,4 +1,20 @@
 #pragma once
+// Introduce feature testing header in C++20 and above
+#if __cplusplus >= 202002L
+#   include <version>
+#endif
+
+// === EXECUTION ===
+#if defined (__cpp_lib_execution)
+#   if __cpp_lib_execution >= 201902L
+#       define AVALANCHE_EXECUTION_CAN_VECTORIZATION std::execution::unseq
+#   else
+#       define AVALANCHE_EXECUTION_CAN_VECTORIZATION std::execution::seq
+#   endif // __cpp_lib_execution >= 201902L
+#else // !defined (__cpp_lib_execution)
+#   define AVALANCHE_EXECUTION_CAN_VECTORIZATION
+#endif // defined (__cpp_lib_execution)
+// === EXECUTION ===
 
 // === FORCEINLINE ===
 #if !defined(FORCEINLINE)
@@ -55,3 +71,9 @@
 #   endif
 #endif
 // === Decl ===
+
+// === no_discard ===
+#if !defined(AVALANCHE_NO_DISCARD)
+#   define AVALANCHE_NO_DISCARD [[nodiscard]]
+#endif
+// === no_discard ===

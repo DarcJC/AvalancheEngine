@@ -1,5 +1,7 @@
 #pragma once
 
+#include "render_enums.h"
+
 namespace avalanche::rendering {
 
     struct DeviceFeatures {
@@ -10,6 +12,11 @@ namespace avalanche::rendering {
         bool performance_query = false;
         bool debug = false;
         bool tile_based = false; // Not impl yet
+    };
+
+    struct DeviceSettings {
+        DeviceFeatures required_features{};
+        EGPUPowerPreference power_preference = EGPUPowerPreference::HighPerformance;
     };
 
     class RenderDevice {

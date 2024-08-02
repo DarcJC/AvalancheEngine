@@ -1,8 +1,16 @@
 
+set(sources
+        "private/core.cpp"
+        "private/logger.cpp"
+        "private/container/string.cpp"
+        "private/container/allocator.cpp"
+        "private/container/exception.cpp"
+)
+
 avalanche_target(
         SHARED_LIBRARY
         NAME "core"
-        SRCS "private/core.cpp" "private/logger.cpp"
+        SRCS ${sources}
 )
 
 target_link_libraries(avalanche_core PRIVATE spdlog::spdlog)

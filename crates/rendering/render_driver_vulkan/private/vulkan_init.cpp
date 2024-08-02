@@ -3,6 +3,8 @@
 #include "vulkan_context.h"
 #include "render_enums.h"
 #include "render_device.h"
+#include "GLFW/glfw3.h"
+#include <algorithm>
 #include <unordered_map>
 
 #if defined(AVALANCHE_BUILD_SHARED)
@@ -12,7 +14,7 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 
 namespace avalanche::rendering::vulkan {
 
-    vk::UniqueInstance Context::create_instance() {
+    vk::Instance Context::create_instance() const {
         vk::ApplicationInfo app_info("AvalancheEngine", AVALANCHE_PROJECT_VERSION_MAJOR, "AvalancheEngine", AVALANCHE_PROJECT_VERSION_MAJOR, VK_API_VERSION_1_3);
         vk::InstanceCreateInfo create_info({}, &app_info);
 
@@ -21,7 +23,7 @@ namespace avalanche::rendering::vulkan {
         create_info.enabledLayerCount = static_cast<uint32_t>(m_extensions_and_layers.instance_layers.size());
         create_info.ppEnabledLayerNames = m_extensions_and_layers.instance_layers.data();
 
-        vk::UniqueInstance instance = vk::createInstanceUnique(create_info);
+        vk::Instance instance = vk::createInstance(create_info);
         return instance;
     }
 
@@ -50,17 +52,33 @@ namespace avalanche::rendering::vulkan {
         }
     };
 
-    vk::PhysicalDevice Context::pick_physical_device(EGPUPowerPreference preference) {
-        std::vector<vk::PhysicalDevice> devices = m_instance->enumeratePhysicalDevices();
+    vk::PhysicalDevice Context::pick_physical_device(EGPUPowerPreference preference) const {
+        std::vector<vk::PhysicalDevice> devices = m_instance.enumeratePhysicalDevices();
 
         AVALANCHE_CHECK(!devices.empty(), "Can't find render devices");
 
         std::sort(devices.begin(), devices.end(), DeviceComparator{
             .power_preference = preference,
-            .required_display = m_features.display,
+            .required_display = m_device_settings.required_features.display,
         });
 
         return devices.front();
+    }
+
+    vk::Device Context::create_device() const {
+        std::vector<vk::QueueFamilyProperties2> queue_family_properties = m_primary_physical_device.getQueueFamilyProperties2();
+        AVALANCHE_TODO();
+        return nullptr;
+    }
+
+    Context::Context(const DeviceSettings& device_settings)
+            : m_device_settings(device_settings) {
+        if (m_device_settings.required_features.display) {
+            AVALANCHE_CHECK(glfwVulkanSupported(), "GLFW said vulkan isn't supported to using display functionality");
+        }
+        m_extensions_and_layers = ExtensionAndLayer::create_from_features(m_device_settings.required_features);
+        m_instance = create_instance();
+        m_primary_physical_device = pick_physical_device(m_device_settings.power_preference);
     }
 
 }
