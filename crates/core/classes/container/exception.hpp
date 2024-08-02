@@ -11,7 +11,7 @@ namespace avalanche {
     };
 
     template <HasWhatFunction ExpType>
-    void raise_expection(ExpType exp) {
+    inline void raise_exception(ExpType exp) {
 #if __cpp_exceptions >= 199711L
         throw exp;
 #else

@@ -36,7 +36,7 @@ namespace avalanche {
 
         void check_index(size_type index) const {
             if (index >= m_length)
-                raise_expection(out_of_range());
+                raise_exception(out_of_range());
         }
 
         void resize_internal(size_type new_capacity = 0) {
@@ -82,7 +82,7 @@ namespace avalanche {
         }
 
         template <typename U = T>
-        requires(std::is_convertible_v<const U&, T>)
+        requires std::convertible_to<const U&, T>
         vector_base(const vector_base<U>& other) {
             resize_internal(m_capacity);
             for (size_type i = 0; i < m_length; ++i) {
@@ -103,7 +103,7 @@ namespace avalanche {
         }
 
         template <typename U = T>
-        requires(std::is_convertible_v<const U&, T>)
+        requires std::convertible_to<const U&, T>
         vector_base& operator=(const vector_base<U>& other) {
             if (this != &other) {
                 clear();
@@ -131,7 +131,7 @@ namespace avalanche {
         }
 
         template <typename U = T>
-        requires(std::is_convertible_v<const U&, T>)
+        requires std::convertible_to<const U&, T>
         size_type add_item(const U& value) {
             if (m_length == m_capacity) {
                 resize_internal();
@@ -141,7 +141,7 @@ namespace avalanche {
         }
 
         template <typename U = T>
-        requires(std::is_convertible_v<U&&, T>)
+        requires std::convertible_to<U&&, T>
         size_type add_item(U&& value) {
             if (m_length == m_capacity) {
                 resize_internal();
@@ -151,13 +151,13 @@ namespace avalanche {
         }
 
         template <typename U = T>
-        requires(std::is_convertible_v<U&&, T>)
+        requires std::convertible_to<U&&, T>
         size_type push_back(const U& value) {
             return add_item(value);
         }
 
         template <typename U = T>
-        requires(std::is_convertible_v<U&&, T>)
+        requires std::convertible_to<U&&, T>
         size_type push_back(U&& value) {
             return add_item(std::move(value));
         }
@@ -190,6 +190,18 @@ namespace avalanche {
                 m_allocator.destroy(m_data + i);
             }
             m_length = 0;
+        }
+
+        template <typename U = T>
+        requires std::equality_comparable_with<const U&, const T&>
+        void remove(const U& value) {
+            while (true) {
+                size_type pos = find(value);
+                if (pos == npos) {
+                    break;
+                }
+                remove_at(pos);
+            }
         }
 
         size_type remove_last() {
@@ -283,7 +295,7 @@ namespace avalanche {
         }
 
         template <typename U = T>
-        requires(std::equality_comparable_with<const U&, const T&>)
+        requires std::equality_comparable_with<const U&, const T&>
         size_type find(const U& value) const {
             for (size_type i = 0; i < m_length; ++i) {
                 if (m_data[i] == value) {
@@ -294,7 +306,7 @@ namespace avalanche {
         }
 
         template <typename U = T>
-        requires(std::equality_comparable_with<const U&, const T&>)
+        requires std::equality_comparable_with<const U&, const T&>
         bool contains(const U& value) {
             return find(value) != npos;
         }
