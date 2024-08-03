@@ -5,6 +5,7 @@
 #include <initializer_list>
 #include <functional>
 #include <concepts>
+#include "polyfill.h"
 #include "container/allocator.hpp"
 #include "container/exception.hpp"
 
@@ -277,19 +278,19 @@ namespace avalanche {
             return m_data;
         }
 
-        size_type length() const {
+        AVALANCHE_NO_DISCARD size_type length() const {
             return m_length;
         }
 
-        size_type size() const {
+        AVALANCHE_NO_DISCARD size_type size() const {
             return length();
         }
 
-        size_type allocated_size() const {
+        AVALANCHE_NO_DISCARD size_type allocated_size() const {
             return m_capacity;
         }
 
-        size_type capacity() const {
+        AVALANCHE_NO_DISCARD size_type capacity() const {
             return allocated_size();
         }
 
@@ -334,8 +335,22 @@ namespace avalanche {
             std::swap(m_allocator, other.m_allocator);
         }
 
-        bool is_valid_index(size_type index) const {
+        AVALANCHE_NO_DISCARD bool is_valid_index(size_type index) const {
             return index < m_length;
+        }
+
+        void set_size_uninitialized(size_type new_size) {
+            if (new_size > m_capacity) {
+                resize_internal(new_size);
+            }
+            m_length = new_size;
+        }
+
+        void set_size_defaulted(size_type new_size) {
+            set_size_uninitialized(new_size);
+            for (size_type i = 0; i < m_length; ++i) {
+                m_allocator.construct(m_data + i);
+            }
         }
     };
 

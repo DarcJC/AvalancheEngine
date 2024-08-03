@@ -42,6 +42,7 @@ namespace avalanche {
         void rehash() {
             size_type new_size = m_buckets.size() * 2;
             bucket_type new_buckets(new_size);
+            new_buckets.set_size_defaulted(new_size);
             for (const node_type& node : m_buckets) {
                 if (node) {
                     size_type index = m_hasher(node->first) % new_size;
@@ -55,7 +56,9 @@ namespace avalanche {
         }
 
     public:
-        hash_map() : m_buckets(default_size) {}
+        hash_map() : m_buckets(default_size) {
+            m_buckets.set_size_defaulted(default_size);
+        }
 
         template <typename U = value_type>
         requires std::is_default_constructible_v<U> && std::convertible_to<U, value_type>

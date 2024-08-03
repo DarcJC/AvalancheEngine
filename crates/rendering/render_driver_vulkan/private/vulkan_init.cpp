@@ -15,6 +15,8 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 namespace avalanche::rendering::vulkan {
 
     vk::Instance Context::create_instance() const {
+        init_vulkan_dispatcher();
+
         vk::ApplicationInfo app_info("AvalancheEngine", AVALANCHE_PROJECT_VERSION_MAJOR, "AvalancheEngine", AVALANCHE_PROJECT_VERSION_MAJOR, VK_API_VERSION_1_3);
         vk::InstanceCreateInfo create_info({}, &app_info);
 
@@ -24,6 +26,7 @@ namespace avalanche::rendering::vulkan {
         create_info.ppEnabledLayerNames = m_extensions_and_layers.instance_layers.data();
 
         vk::Instance instance = vk::createInstance(create_info);
+        VULKAN_HPP_DEFAULT_DISPATCHER.init(instance);
         return instance;
     }
 
@@ -79,6 +82,14 @@ namespace avalanche::rendering::vulkan {
         m_extensions_and_layers = ExtensionAndLayer::create_from_features(m_device_settings.required_features);
         m_instance = create_instance();
         m_primary_physical_device = pick_physical_device(m_device_settings.power_preference);
+        m_available_queue = make_unique<AvailableQueue>(m_primary_physical_device);
+    }
+
+    void Context::init_vulkan_dispatcher() {
+        AVALANCHE_MAYBE_UNUSED static bool val = ([] () {
+            VULKAN_HPP_DEFAULT_DISPATCHER.init();
+            return true;
+        })();
     }
 
 }

@@ -77,3 +77,9 @@
 #   define AVALANCHE_NO_DISCARD [[nodiscard]]
 #endif
 // === no_discard ===
+
+// === maybe_unused ===
+#if !defined(AVALANCHE_MAYBE_UNUSED)
+#   define AVALANCHE_MAYBE_UNUSED [[maybe_unused]]
+#endif
+// === maybe_unused ===

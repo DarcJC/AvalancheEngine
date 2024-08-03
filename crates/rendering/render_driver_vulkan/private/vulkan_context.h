@@ -41,6 +41,7 @@ namespace avalanche::rendering::vulkan
         vk::Device m_device;
 
     protected:
+        static void init_vulkan_dispatcher();
         AVALANCHE_NO_DISCARD vk::Instance create_instance() const;
         AVALANCHE_NO_DISCARD vk::PhysicalDevice pick_physical_device(EGPUPowerPreference preference) const;
         AVALANCHE_NO_DISCARD vk::Device create_device() const;

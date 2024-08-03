@@ -1,7 +1,7 @@
 
 avalanche_target(
         NAME render_device
-        STATIC_LIBRARY
+        SHARED_LIBRARY
         SRCS "private/render_device.cpp"
 )
 

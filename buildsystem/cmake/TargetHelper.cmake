@@ -20,6 +20,9 @@ function(avalanche_target)
         add_library("${target_name}" SHARED "${PARSED_ARGS_SRCS}")
         add_library("avalanche::${PARSED_ARGS_NAME}" ALIAS "${target_name}")
         target_compile_definitions("${target_name}" PRIVATE AVALANCHE_BUILD_SHARED=1)
+        if (WIN32)
+            set_target_properties("${target_name}" PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
+        endif ()
     elseif (PARSED_ARGS_STATIC_LIBRARY)
         add_library("${target_name}" STATIC "${PARSED_ARGS_SRCS}")
         add_library("avalanche::${PARSED_ARGS_NAME}" ALIAS "${target_name}")
@@ -35,11 +38,13 @@ function(avalanche_target)
     string(TOUPPER ${target_name} TARGET_NAME_UPPER)
     string(TOLOWER ${target_name} TARGET_NAME_LOWER)
     string(TOUPPER ${PARSED_ARGS_NAME} NAME_UPPER)
-    generate_export_header(${target_name}
-            EXPORT_MACRO_NAME "${TARGET_NAME_UPPER}_API"
-            NO_EXPORT_MACRO_NAME "${TARGET_NAME_UPPER}_INTERNAL"
-            EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/ExportHeaders/${TARGET_NAME_LOWER}_export.h"
-    )
+    if (NOT PARSED_ARGS_EXECUTABLE)
+        generate_export_header(${target_name}
+                EXPORT_MACRO_NAME "${TARGET_NAME_UPPER}_API"
+                NO_EXPORT_MACRO_NAME "${TARGET_NAME_UPPER}_INTERNAL"
+                EXPORT_FILE_NAME "${CMAKE_BINARY_DIR}/ExportHeaders/${TARGET_NAME_LOWER}_export.h"
+        )
+    endif ()
     target_compile_definitions(${target_name} PRIVATE
             "AVALANCHE_${PARSED_ARGS_NAME}_EXPORTS"
             "${TARGET_NAME_UPPER}_EXPORTS"
