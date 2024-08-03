@@ -59,12 +59,16 @@ namespace avalanche::rendering::vulkan {
 
     AvailableQueue::AvailableQueue(vk::PhysicalDevice physical_device) {
         auto props = physical_device.getQueueFamilyProperties2();
-        m_queue_family_indices.insert_defaulted_if_absent(EQueueType::Graphics);
+
+        for (auto i = static_cast<uint8_t>(EQueueType::Graphics); i < static_cast<uint8_t>(EQueueType::Max); ++i) {
+            m_queue_family_indices.insert_defaulted_if_absent(static_cast<EQueueType>(i));
+        }
 
         for (uint32_t i = 0; i < props.size(); ++i) {
             const vk::QueueFamilyProperties& queue_family = props[i].queueFamilyProperties;
 
             if (queue_family.queueFlags & vk::QueueFlagBits::eGraphics) {
+                m_queue_family_indices[EQueueType::Graphics].push_back(i);
             }
         }
     }

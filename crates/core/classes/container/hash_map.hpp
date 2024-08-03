@@ -87,6 +87,19 @@ namespace avalanche {
             ++m_size;
         }
 
+        value_pointer_type find(key_const_reference_type key) {
+            size_type index = index_of_key(key);
+            size_type count = 0;
+            while (m_buckets[index] && count < m_buckets.size()) {
+                if (m_buckets[index]->first == key) {
+                    return &m_buckets[index]->second;
+                }
+                index = (index + 1) % m_buckets.size();
+                ++count;
+            }
+            return nullptr;
+        }
+
         value_const_pointer_type find(key_const_reference_type key) const {
             size_type index = index_of_key(key);
             size_type count = 0;
@@ -100,6 +113,18 @@ namespace avalanche {
             return nullptr;
         }
 
+        value_reference_type get(key_const_reference_type key) {
+            value_pointer_type ptr = find(key);
+            AVALANCHE_CHECK(nullptr != ptr, "Trying visit a non-exist item in HashMap");
+            return *ptr;
+        }
+
+        value_const_reference_type get(key_const_reference_type key) const {
+            value_pointer_type ptr = find(key);
+            AVALANCHE_CHECK(nullptr != ptr, "Trying visit a non-exist item in HashMap");
+            return *ptr;
+        }
+
         bool contains(key_const_reference_type key) const {
             return find(key);
         }
@@ -107,6 +132,14 @@ namespace avalanche {
         void set_load_factor(load_factor_type new_factor) {
             AVALANCHE_CHECK(new_factor < 0.9 && new_factor > 0.05, "Load factor must only set to less than 0.9 and lager than 0.05");
             m_load_factor_to_scale = new_factor;
+        }
+
+        value_reference_type operator[](key_const_reference_type key) {
+            return get(key);
+        }
+
+        value_const_reference_type operator[](key_const_reference_type key) const {
+            return get(key);
         }
     };
 
