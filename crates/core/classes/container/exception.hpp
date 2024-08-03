@@ -23,19 +23,24 @@ namespace avalanche {
     struct AVALANCHE_CORE_API exception_base {
         virtual ~exception_base();
 
-        virtual const char* what() const AVALANCHE_NOEXCEPT = 0;
+        AVALANCHE_NO_DISCARD virtual const char* what() const AVALANCHE_NOEXCEPT = 0;
     };
 
-    struct simple_error : exception_base {
+    struct AVALANCHE_CORE_API simple_error : exception_base {
         explicit simple_error(const char* msg);
 
-        const char* what() const AVALANCHE_NOEXCEPT override;
+        AVALANCHE_NO_DISCARD const char* what() const AVALANCHE_NOEXCEPT override;
 
     protected:
         const char* m_what = nullptr;
     };
 
     struct out_of_range final : simple_error {
-        out_of_range();
+        AVALANCHE_CORE_API out_of_range();
     };
+
+    struct invalid_access final : simple_error {
+        AVALANCHE_CORE_API invalid_access();
+    };
+
 }

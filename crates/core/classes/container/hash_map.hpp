@@ -1,83 +1,110 @@
 #pragma once
 
 #include <memory>
+#include <cstdint>
 #include <initializer_list>
-#include <tuple>
-#include "container/impl/red_black_tree.hpp"
+#include "container/vector.hpp"
+#include "container/utility.hpp"
+#include "container/optional.hpp"
 
 namespace avalanche {
 
     template <typename Key, typename Value, typename Hash = std::hash<Key>>
-    class map_base {
+    class hash_map {
     public:
         using key_type = Key;
         using key_reference_type = key_type&;
         using key_const_reference_type = const key_type&;
         using value_type = Value;
+        using value_pointer_type = value_type*;
+        using value_const_pointer_type = const value_type*;
         using size_type = size_t;
         using value_reference_type = value_type&;
         using value_const_reference_type = const value_type&;
         using hash_impl = Hash;
         using hash_key_size = size_t;
-        using rb_tree_impl = RBTreeMap<hash_key_size, Value>;
+        using node_type = optional<pair<key_type, value_type>>;
+        using bucket_type = vector<node_type>;
+        using bucket_iterator = typename bucket_type::iterator_type;
+        using load_factor_type = float;
 
     private:
         hash_impl m_hasher {};
-        rb_tree_impl m_rb_tree{};
+        bucket_type m_buckets{};
+        size_type m_size = 0;
+        load_factor_type m_load_factor_to_scale = 0.75;
+        static constexpr size_type default_size = 8;
+
+        size_type index_of_key(key_const_reference_type key) const {
+            return m_hasher(key) % m_buckets.size();
+        }
+
+        void rehash() {
+            size_type new_size = m_buckets.size() * 2;
+            bucket_type new_buckets(new_size);
+            for (const node_type& node : m_buckets) {
+                if (node) {
+                    size_type index = m_hasher(node->first) % new_size;
+                    while (new_buckets[index]) {
+                        index = (index + 1) % new_size;
+                    }
+                    new_buckets[index] = node;
+                }
+            }
+            m_buckets.swap(new_buckets);
+        }
 
     public:
-        map_base() : m_hasher(hash_impl{}), m_rb_tree(rb_tree_impl{}) {}
-        explicit map_base(hash_impl impl) : m_hasher(std::move(impl)) {}
-        map_base(std::initializer_list<std::pair<key_type, value_type>> initializers) : map_base() {
-            for (auto& [key, value] : initializers) {
-                m_rb_tree.insert(m_hasher(key), value);
+        hash_map() : m_buckets(default_size) {}
+
+        template <typename U = value_type>
+        requires std::is_default_constructible_v<U> && std::convertible_to<U, value_type>
+        bool insert_defaulted_if_absent(key_const_reference_type key) {
+            if (!contains(key)) {
+                insert_or_assign(key, U{});
+                return true;
             }
+            return false;
         }
 
-        AVALANCHE_NO_DISCARD size_type size() const AVALANCHE_NOEXCEPT {
-            return m_rb_tree.size();
+        void insert_or_assign(key_const_reference_type key, value_const_reference_type value) {
+            if (m_size >= m_buckets.size() * m_load_factor_to_scale) { // Scale while load coefficient >= 0.75
+                rehash();
+            }
+
+            size_type index = index_of_key(key);
+            while (m_buckets[index]) {
+                if (m_buckets[index]->first == key) {
+                    m_buckets[index]->second = value; // update
+                    return;
+                }
+                index = (index + 1) % m_buckets.size();
+            }
+            m_buckets[index] = make_pair(key, value); // insert
+            ++m_size;
         }
 
-        AVALANCHE_NO_DISCARD bool is_empty() const AVALANCHE_NOEXCEPT {
-            return m_rb_tree.empty();
+        value_const_pointer_type find(key_const_reference_type key) const {
+            size_type index = index_of_key(key);
+            size_type count = 0;
+            while (m_buckets[index] && count < m_buckets.size()) {
+                if (m_buckets[index]->first == key) {
+                    return &m_buckets[index]->second;
+                }
+                index = (index + 1) % m_buckets.size();
+                ++count;
+            }
+            return nullptr;
         }
 
-        void clear() AVALANCHE_NOEXCEPT {
-            m_rb_tree.clear();
+        bool contains(key_const_reference_type key) const {
+            return find(key);
         }
 
-        void reset() AVALANCHE_NOEXCEPT {
-            clear();
-        }
-
-        value_const_reference_type get(const key_type& key) const {
-            return m_rb_tree.get(m_hasher(key));
-        }
-
-        value_reference_type get(const key_type& key) {
-            return m_rb_tree.get(m_hasher(key));
-        }
-
-        bool contains(const key_type& key) const {
-            return m_rb_tree.contains(m_hasher(key));
-        }
-
-        value_type get_or_default(const key_type& key, const value_type& default_value) const {
-            return contains(key) ? get(key) : default_value;
-        }
-
-        template <typename X = key_type, typename Y = value_type>
-        requires std::convertible_to<const X&, key_const_reference_type> && std::convertible_to<Y, value_type>
-        void insert(const X& key, Y&& value) {
-            m_rb_tree.insert(m_hasher(static_cast<key_const_reference_type>(key)), std::forward<Y>(value));
-        }
-
-        template <typename X = key_type, typename Y = value_type>
-        requires std::convertible_to<const X&, const key_type&> && std::convertible_to<const Y&, const value_type&>
-        bool insert_if_not_exist(const X& key, const Y& value) {
+        void set_load_factor(load_factor_type new_factor) {
+            AVALANCHE_CHECK(new_factor < 0.9 && new_factor > 0.05, "Load factor must only set to less than 0.9 and lager than 0.05");
+            m_load_factor_to_scale = new_factor;
         }
     };
 
-    template <typename Key, typename Value, typename Hash = std::hash<Key>>
-    using map = map_base<Key, Value, Hash>;
 }

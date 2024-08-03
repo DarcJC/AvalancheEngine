@@ -63,8 +63,11 @@ namespace avalanche {
     public:
         vector_base() : m_data(nullptr), m_length(0), m_capacity(0) {}
         explicit vector_base(const allocator_type& allocator) : m_allocator(allocator), m_data(nullptr), m_length(0), m_capacity(0) {}
+        explicit vector_base(size_type default_capacity) : vector_base() {
+            resize_internal(default_capacity);
+        }
 
-        template <typename U = T>
+        template <typename U = value_type>
         requires(std::is_convertible_v<U, T>)
         vector_base(std::initializer_list<U> initializers) : m_length(0), m_allocator(allocator_type{}) {
             resize_internal(initializers.size());
@@ -81,9 +84,7 @@ namespace avalanche {
             }
         }
 
-        template <typename U = T>
-        requires std::convertible_to<const U&, T>
-        vector_base(const vector_base<U>& other) {
+        vector_base(const vector_base& other) {
             resize_internal(m_capacity);
             for (size_type i = 0; i < m_length; ++i) {
                 m_allocator.construct(m_data + i, other.m_data[i]);
@@ -102,9 +103,7 @@ namespace avalanche {
             other.m_capacity = 0;
         }
 
-        template <typename U = T>
-        requires std::convertible_to<const U&, T>
-        vector_base& operator=(const vector_base<U>& other) {
+        vector_base& operator=(const vector_base& other) {
             if (this != &other) {
                 clear();
                 resize_internal(other.m_capacity);
@@ -130,8 +129,8 @@ namespace avalanche {
             return *this;
         }
 
-        template <typename U = T>
-        requires std::convertible_to<const U&, T>
+        template <typename U = value_type>
+        requires std::convertible_to<const U&, value_type>
         size_type add_item(const U& value) {
             if (m_length == m_capacity) {
                 resize_internal();
@@ -140,26 +139,26 @@ namespace avalanche {
             return m_length++;
         }
 
-        template <typename U = T>
-        requires std::convertible_to<U&&, T>
+        template <typename U = value_type>
+        requires std::convertible_to<U&&, value_type>
         size_type add_item(U&& value) {
             if (m_length == m_capacity) {
                 resize_internal();
             }
-            m_allocator.construct(m_data + m_length, std::move(value));
+            m_allocator.construct(m_data + m_length, std::forward<U>(value));
             return m_length++;
         }
 
-        template <typename U = T>
-        requires std::convertible_to<U&&, T>
+        template <typename U = value_type>
+        requires std::convertible_to<U&&, value_type>
         size_type push_back(const U& value) {
             return add_item(value);
         }
 
-        template <typename U = T>
-        requires std::convertible_to<U&&, T>
+        template <typename U = value_type>
+        requires std::convertible_to<U&&, value_type>
         size_type push_back(U&& value) {
-            return add_item(std::move(value));
+            return add_item(std::forward<U>(value));
         }
 
         template <typename... Args>
@@ -192,8 +191,8 @@ namespace avalanche {
             m_length = 0;
         }
 
-        template <typename U = T>
-        requires std::equality_comparable_with<const U&, const T&>
+        template <typename U = value_type>
+        requires std::equality_comparable_with<const U&, const_reference_type>
         void remove(const U& value) {
             while (true) {
                 size_type pos = find(value);
@@ -221,8 +220,8 @@ namespace avalanche {
             --m_length;
         }
 
-        template <typename U = T>
-        requires(std::is_convertible_v<U, T>)
+        template <typename U = value_type>
+        requires(std::is_convertible_v<U, value_type>)
         void insert_at(size_type index, const U& value) {
             check_index(index);
             if (m_length == m_capacity) {
@@ -294,8 +293,8 @@ namespace avalanche {
             return allocated_size();
         }
 
-        template <typename U = T>
-        requires std::equality_comparable_with<const U&, const T&>
+        template <typename U = value_type>
+        requires std::equality_comparable_with<const U&, const value_type&>
         size_type find(const U& value) const {
             for (size_type i = 0; i < m_length; ++i) {
                 if (m_data[i] == value) {
@@ -305,8 +304,8 @@ namespace avalanche {
             return npos;
         }
 
-        template <typename U = T>
-        requires std::equality_comparable_with<const U&, const T&>
+        template <typename U = value_type>
+        requires std::equality_comparable_with<const U&, const value_type&>
         bool contains(const U& value) {
             return find(value) != npos;
         }
@@ -326,6 +325,17 @@ namespace avalanche {
 
         void sort(std::function<bool(const_reference_type,const_reference_type)> comparator) {
             std::sort(begin(), end(), comparator);
+        }
+
+        void swap(vector_base& other) {
+            std::swap(m_length, other.m_length);
+            std::swap(m_capacity, other.m_capacity);
+            std::swap(m_data, other.m_data);
+            std::swap(m_allocator, other.m_allocator);
+        }
+
+        bool is_valid_index(size_type index) const {
+            return index < m_length;
         }
     };
 

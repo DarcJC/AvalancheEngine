@@ -4,6 +4,7 @@
 #include "render_enums.h"
 #include "render_device.h"
 #include "container/hash_map.hpp"
+#include "container/unique_ptr.hpp"
 #include "container/vector.hpp"
 
 namespace avalanche::rendering::vulkan
@@ -18,6 +19,11 @@ namespace avalanche::rendering::vulkan
     };
 
     class AvailableQueue {
+    private:
+        hash_map<EQueueType, vector<uint32_t>> m_queue_family_indices{};
+
+    public:
+        explicit AvailableQueue(vk::PhysicalDevice physical_device);
     };
 
     class Context {
@@ -27,6 +33,8 @@ namespace avalanche::rendering::vulkan
     protected:
         DeviceSettings m_device_settings;
         ExtensionAndLayer m_extensions_and_layers;
+
+        unique_ptr<AvailableQueue> m_available_queue;
 
         vk::Instance m_instance;
         vk::PhysicalDevice m_primary_physical_device;
