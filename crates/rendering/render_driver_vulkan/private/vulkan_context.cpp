@@ -70,6 +70,34 @@ namespace avalanche::rendering::vulkan {
             if (queue_family.queueFlags & vk::QueueFlagBits::eGraphics) {
                 m_queue_family_indices[EQueueType::Graphics].push_back(i);
             }
+            if (queue_family.queueFlags & vk::QueueFlagBits::eCompute) {
+                m_queue_family_indices[EQueueType::Compute].push_back(i);
+            }
+            if (queue_family.queueFlags & vk::QueueFlagBits::eTransfer) {
+                m_queue_family_indices[EQueueType::Transfer].push_back(i);
+            }
+            if (queue_family.queueFlags & vk::QueueFlagBits::eSparseBinding) {
+                m_queue_family_indices[EQueueType::SparseBinding].push_back(i);
+            }
+            if (queue_family.queueFlags & vk::QueueFlagBits::eVideoDecodeKHR) {
+                m_queue_family_indices[EQueueType::VideoDecode].push_back(i);
+            }
+            if (queue_family.queueFlags & vk::QueueFlagBits::eVideoEncodeKHR) {
+                m_queue_family_indices[EQueueType::VideoEncode].push_back(i);
+            }
         }
     }
+
+    AvailableQueue::index_type AvailableQueue::acquire_queue_index(EQueueType queue_type) {
+        if (!m_queue_family_indices.contains(queue_type)) {
+            raise_exception(queue_not_available());
+        }
+        auto indices = m_queue_family_indices[queue_type];
+        if (indices.is_empty()) {
+            raise_exception(queue_not_available());
+        }
+        return indices.front_item();
+    }
+
+    queue_not_available::queue_not_available() : simple_error("Specified queue is not available") {}
 }

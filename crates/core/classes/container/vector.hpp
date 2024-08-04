@@ -87,7 +87,7 @@ namespace avalanche {
 
         vector_base(const vector_base& other) {
             resize_internal(m_capacity);
-            for (size_type i = 0; i < m_length; ++i) {
+            for (size_type i = 0; i < other.m_length; ++i) {
                 m_allocator.construct(m_data + i, other.m_data[i]);
             }
             m_length = other.m_length;
@@ -352,6 +352,31 @@ namespace avalanche {
                 m_allocator.construct(m_data + i);
             }
         }
+
+        AVALANCHE_NO_DISCARD bool is_empty() const {
+            return m_length == 0;
+        }
+
+        reference_type front_item() {
+            AVALANCHE_CHECK(!is_empty(), "Function front_item() is unavailable to use while vector is empty");
+            return at(0);
+        }
+
+        const_reference_type front_item() const {
+            AVALANCHE_CHECK(!is_empty(), "Function front_item() is unavailable to use while vector is empty");
+            return at(0);
+        }
+
+        reference_type last_item() {
+            AVALANCHE_CHECK(!is_empty(), "Function last_item() is unavailable to use while vector is empty");
+            return at(m_length - 1);
+        }
+
+        const_reference_type last_item() const {
+            AVALANCHE_CHECK(!is_empty(), "Function last_item() is unavailable to use while vector is empty");
+            return at(m_length - 1);
+        }
+
     };
 
     template <typename T, typename Allocator = default_allocator<T>>

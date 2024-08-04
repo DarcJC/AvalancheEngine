@@ -1,5 +1,6 @@
 #pragma once
 
+#include "avalanche_render_driver_vulkan_export.h"
 #include "vulkan/vulkan.hpp"
 #include "render_enums.h"
 #include "render_device.h"
@@ -18,12 +19,21 @@ namespace avalanche::rendering::vulkan
         static ExtensionAndLayer create_from_features(const DeviceFeatures& features);
     };
 
+    struct queue_not_available final : simple_error {
+        queue_not_available();
+    };
+
     class AvailableQueue {
+    public:
+        using index_type = uint32_t;
+
     private:
-        hash_map<EQueueType, vector<uint32_t>> m_queue_family_indices{};
+        hash_map<EQueueType, vector<index_type>> m_queue_family_indices{};
 
     public:
         explicit AvailableQueue(vk::PhysicalDevice physical_device);
+
+        index_type acquire_queue_index(EQueueType queue_type);
     };
 
     class Context {
