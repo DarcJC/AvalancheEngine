@@ -1,3 +1,4 @@
+#include "container/string.hpp"
 #include "vulkan_context.h"
 #include "vulkan_macro.h"
 #include "GLFW/glfw3.h"
@@ -55,6 +56,36 @@ namespace avalanche::rendering::vulkan {
         }
 
         return res;
+    }
+
+    bool ExtensionAndLayer::validate_instance() const {
+        auto available_layers = vk::enumerateInstanceLayerProperties();
+        vector<string> available_layer_names{};
+        for (const auto& layer : available_layers) {
+            available_layer_names.push_back(std::string_view(layer.layerName));
+        }
+
+        auto available_extensions = vk::enumerateInstanceExtensionProperties();
+        vector<string> available_extension_names;
+        for (const auto& extension : available_extensions) {
+            available_extension_names.push_back(std::string_view(extension.extensionName));
+        }
+
+        for (const auto& layer : instance_layers) {
+            if (!available_extension_names.contains(layer)) {
+                AVALANCHE_ENSURE(false, "Invalid instance layer: {}", layer);
+                return false;
+            }
+        }
+
+        for (const auto& extension : instance_extensions) {
+            if (!available_extension_names.contains(extension)) {
+                AVALANCHE_ENSURE(false, "Invalid instance extension: {}", extension);
+                return false;
+            }
+        }
+
+        return true;
     }
 
     AvailableQueue::AvailableQueue(vk::PhysicalDevice physical_device) {

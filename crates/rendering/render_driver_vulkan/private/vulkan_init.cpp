@@ -69,8 +69,6 @@ namespace avalanche::rendering::vulkan {
     }
 
     vk::Device Context::create_device() const {
-        std::vector<vk::QueueFamilyProperties2> queue_family_properties = m_primary_physical_device.getQueueFamilyProperties2();
-        AVALANCHE_TODO();
         return nullptr;
     }
 
@@ -80,7 +78,14 @@ namespace avalanche::rendering::vulkan {
             AVALANCHE_CHECK(glfwVulkanSupported(), "GLFW said vulkan isn't supported to using display functionality");
         }
         m_extensions_and_layers = ExtensionAndLayer::create_from_features(m_device_settings.required_features);
+        AVALANCHE_CHECK(m_extensions_and_layers.validate_instance(), "Found invalid layer(s) or extension(s)");
+
         m_instance = create_instance();
+        // Create debug messenger
+        if (m_device_settings.required_features.debug) {
+            inject_debug_callback();
+        }
+
         m_primary_physical_device = pick_physical_device(m_device_settings.power_preference);
         m_available_queue = make_unique<AvailableQueue>(m_primary_physical_device);
     }

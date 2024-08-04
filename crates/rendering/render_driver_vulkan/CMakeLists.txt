@@ -2,7 +2,7 @@
 avalanche_target(
         NAME render_driver_vulkan
         SHARED_LIBRARY
-        SRCS "private/vulkan_init.cpp" "private/vulkan_context.cpp"
+        SRCS "private/vulkan_init.cpp" "private/vulkan_context.cpp" "private/vulkan_debug.cpp"
 )
 
 target_link_libraries(avalanche_render_driver_vulkan PUBLIC avalanche::core)

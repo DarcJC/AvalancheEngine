@@ -17,6 +17,8 @@ namespace avalanche::rendering::vulkan
         vector<const char*> device_layers;
 
         static ExtensionAndLayer create_from_features(const DeviceFeatures& features);
+
+        bool validate_instance() const;
     };
 
     struct queue_not_available final : simple_error {
@@ -50,10 +52,13 @@ namespace avalanche::rendering::vulkan
         vk::PhysicalDevice m_primary_physical_device;
         vk::Device m_device;
 
+        unique_ptr<vk::DebugUtilsMessengerEXT> m_debug_messenger;
+
     protected:
         static void init_vulkan_dispatcher();
         AVALANCHE_NO_DISCARD vk::Instance create_instance() const;
         AVALANCHE_NO_DISCARD vk::PhysicalDevice pick_physical_device(EGPUPowerPreference preference) const;
+        void inject_debug_callback();
         AVALANCHE_NO_DISCARD vk::Device create_device() const;
     };
 }
