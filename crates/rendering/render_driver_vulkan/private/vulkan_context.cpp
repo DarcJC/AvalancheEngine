@@ -36,13 +36,11 @@ namespace avalanche::rendering::vulkan {
             res.instance_extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
             // VK_EXT_validation_features was deprecated and replaced with VK_EXT_layer_settings enabling all settings to be controlled programmatically
             // https://github.com/KhronosGroup/Vulkan-ValidationLayers/blob/main/docs/khronos_validation_layer.md
-            res.instance_extensions.push_back(VK_EXT_LAYER_SETTINGS_EXTENSION_NAME);
             res.instance_extensions.push_back(VK_EXT_DEBUG_REPORT_EXTENSION_NAME);
             if (features.ray_tracing) {
                 // Should we enable manufacture specified extension?
                 // res.instance_extensions.push_back(VK_NV_RAY_TRACING_VALIDATION_EXTENSION_NAME);
             }
-            res.instance_layers.push_back("VK_LAYER_KHRONOS_validation");
         }
 
         if (features.display) {
@@ -59,13 +57,18 @@ namespace avalanche::rendering::vulkan {
     }
 
     bool ExtensionAndLayer::validate_instance() const {
-        auto available_layers = vk::enumerateInstanceLayerProperties();
+        const vk::DynamicLoader dynamic_loader;
+        const auto vkGetInstanceProcAddr = dynamic_loader.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
+        AVALANCHE_CHECK(vkGetInstanceProcAddr, "");
+        VULKAN_HPP_DEFAULT_DISPATCHER.init();
+
+        const auto available_layers = vk::enumerateInstanceLayerProperties();
         vector<string> available_layer_names{};
         for (const auto& layer : available_layers) {
             available_layer_names.push_back(std::string_view(layer.layerName));
         }
 
-        auto available_extensions = vk::enumerateInstanceExtensionProperties();
+        const auto available_extensions = vk::enumerateInstanceExtensionProperties();
         vector<string> available_extension_names;
         for (const auto& extension : available_extensions) {
             available_extension_names.push_back(std::string_view(extension.extensionName));
@@ -89,7 +92,7 @@ namespace avalanche::rendering::vulkan {
     }
 
     AvailableQueue::AvailableQueue(vk::PhysicalDevice physical_device) {
-        auto props = physical_device.getQueueFamilyProperties2();
+        const auto props = physical_device.getQueueFamilyProperties2();
 
         for (auto i = static_cast<uint8_t>(EQueueType::Graphics); i < static_cast<uint8_t>(EQueueType::Max); ++i) {
             m_queue_family_indices.insert_defaulted_if_absent(static_cast<EQueueType>(i));

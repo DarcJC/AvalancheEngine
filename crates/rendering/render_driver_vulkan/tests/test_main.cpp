@@ -10,6 +10,7 @@ int main(int argc, char* argv[]) {
     using namespace avalanche::rendering;
 
     DeviceSettings settings{};
+    settings.required_features.debug = true;
 
     vulkan::Context context(settings);
 

@@ -78,10 +78,9 @@ namespace avalanche::rendering::vulkan {
             AVALANCHE_CHECK(glfwVulkanSupported(), "GLFW said vulkan isn't supported to using display functionality");
         }
         m_extensions_and_layers = ExtensionAndLayer::create_from_features(m_device_settings.required_features);
+        AVALANCHE_CHECK(m_extensions_and_layers.validate_instance(), "Found invalid layer(s) or extension(s)");
 
         m_instance = create_instance();
-
-        AVALANCHE_CHECK(m_extensions_and_layers.validate_instance(), "Found invalid layer(s) or extension(s)");
 
         // Create debug messenger
         if (m_device_settings.required_features.debug) {
