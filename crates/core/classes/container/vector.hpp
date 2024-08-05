@@ -334,7 +334,7 @@ namespace avalanche {
             std::sort(begin(), end(), comparator);
         }
 
-        void swap(vector_base& other) {
+        void swap(vector_base& other) AVALANCHE_NOEXCEPT {
             std::swap(m_length, other.m_length);
             std::swap(m_capacity, other.m_capacity);
             std::swap(m_data, other.m_data);

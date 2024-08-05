@@ -3,6 +3,7 @@
 #include "polyfill.h"
 #include "container/allocator.hpp"
 #include <string_view>
+#include <format>
 
 namespace avalanche
 {
@@ -35,7 +36,7 @@ namespace avalanche
         AVALANCHE_NO_DISCARD bool is_empty() const AVALANCHE_NOEXCEPT;
         void swap(simple_string& other) AVALANCHE_NOEXCEPT;
 
-        operator std::string_view() AVALANCHE_NOEXCEPT;
+        operator std::string_view() const AVALANCHE_NOEXCEPT;
         operator const char*() const AVALANCHE_NOEXCEPT;
         operator char*() noexcept;
 
@@ -66,4 +67,12 @@ namespace avalanche
 
     using string = simple_string;
 }
+
+template <>
+struct std::formatter<avalanche::simple_string> : std::formatter<string_view> {
+    auto format(const avalanche::simple_string& s, std::format_context& ctx) const {
+        return formatter<string_view>::format(s, ctx);
+    }
+};
+
 

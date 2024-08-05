@@ -3,6 +3,7 @@
 //
 
 #include "vulkan_context.h"
+#include "container/string.hpp"
 
 namespace avalanche::rendering::vulkan {
 
@@ -12,11 +13,26 @@ namespace avalanche::rendering::vulkan {
         const VkDebugUtilsMessengerCallbackDataEXT* callback_data,
         void* user_data) {
 
-        const auto print_message_if_valid = [callback_data] (core::LogLevel level) {
+        const auto get_type_prefix_name = [message_type] () -> string {
+            switch (message_type) {
+                case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:
+                    return "GENERAL";
+                case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:
+                    return "VALIDATION";
+                case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:
+                    return "PERFORMANCE";
+                case VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT:
+                    return "DEVICE_ADRRESS_BINDING";
+                default:
+                    return "UNKNOWN";
+            }
+        };
+
+        const auto print_message_if_valid = [callback_data, get_type_prefix_name] (const core::LogLevel level) {
             if (callback_data) {
-                AVALANCHE_LOGGER.log(level, "Vulkan validation message:\n\t{}", callback_data->pMessage);
+                AVALANCHE_LOGGER.log(level, "[{}] Vulkan validation message:\n\t{}", get_type_prefix_name(), callback_data->pMessage);
             } else {
-                AVALANCHE_LOGGER.log(level, "Vulkan validation event without message");
+                AVALANCHE_LOGGER.log(level, "[{}] Vulkan validation event without message", get_type_prefix_name());
             }
         };
 

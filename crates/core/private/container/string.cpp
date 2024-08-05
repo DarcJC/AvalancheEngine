@@ -137,7 +137,7 @@ namespace avalanche {
         }
     }
 
-    simple_string::operator std::string_view() noexcept {
+    simple_string::operator std::string_view() const noexcept {
         return m_is_heap ? std::string_view(m_heap_data, m_length) : std::string_view(m_ss_buffer, m_length);
     }
 
