@@ -91,6 +91,36 @@ namespace avalanche::rendering::vulkan {
         return true;
     }
 
+    bool ExtensionAndLayer::validate_device(const vk::PhysicalDevice physical_device) const {
+        const auto available_layers = physical_device.enumerateDeviceLayerProperties();
+        vector<string> available_layer_names{};
+        for (const auto& layer : available_layers) {
+            available_layer_names.push_back(std::string_view(layer.layerName));
+        }
+
+        const auto available_extensions = physical_device.enumerateDeviceExtensionProperties();
+        vector<string> available_extension_names;
+        for (const auto& extension : available_extensions) {
+            available_extension_names.push_back(std::string_view(extension.extensionName));
+        }
+
+        for (const auto& layer : device_layers) {
+            if (!available_extension_names.contains(layer)) {
+                AVALANCHE_ENSURE(false, "Invalid device layer: {}", layer);
+                return false;
+            }
+        }
+
+        for (const auto& extension : device_extensions) {
+            if (!available_extension_names.contains(extension)) {
+                AVALANCHE_ENSURE(false, "Invalid device extension: {}", extension);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
     AvailableQueue::AvailableQueue(vk::PhysicalDevice physical_device) {
         const auto props = physical_device.getQueueFamilyProperties2();
 

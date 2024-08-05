@@ -18,7 +18,8 @@ namespace avalanche::rendering::vulkan
 
         static ExtensionAndLayer create_from_features(const DeviceFeatures& features);
 
-        bool validate_instance() const;
+        AVALANCHE_NO_DISCARD bool validate_instance() const;
+        AVALANCHE_NO_DISCARD bool validate_device(vk::PhysicalDevice physical_device) const;
     };
 
     struct queue_not_available final : simple_error {

@@ -30,9 +30,9 @@ namespace avalanche::rendering::vulkan {
 
         const auto print_message_if_valid = [callback_data, get_type_prefix_name] (const core::LogLevel level) {
             if (callback_data) {
-                AVALANCHE_LOGGER.log(level, "[{}] Vulkan validation message:\n\t{}", get_type_prefix_name(), callback_data->pMessage);
+                AVALANCHE_LOGGER.log(level, "[Vulkan] [{}] {}", get_type_prefix_name(), callback_data->pMessage);
             } else {
-                AVALANCHE_LOGGER.log(level, "[{}] Vulkan validation event without message", get_type_prefix_name());
+                AVALANCHE_LOGGER.log(level, "[Vulkan] [{}] <Empty Message>", get_type_prefix_name());
             }
         };
 

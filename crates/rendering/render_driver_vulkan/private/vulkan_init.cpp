@@ -20,10 +20,12 @@ namespace avalanche::rendering::vulkan {
         vk::ApplicationInfo app_info("AvalancheEngine", AVALANCHE_PROJECT_VERSION_MAJOR, "AvalancheEngine", AVALANCHE_PROJECT_VERSION_MAJOR, VK_API_VERSION_1_3);
         vk::InstanceCreateInfo create_info({}, &app_info);
 
-        create_info.enabledExtensionCount = static_cast<uint32_t>(m_extensions_and_layers.instance_extensions.size());
-        create_info.ppEnabledExtensionNames = m_extensions_and_layers.instance_extensions.data();
-        create_info.enabledLayerCount = static_cast<uint32_t>(m_extensions_and_layers.instance_layers.size());
-        create_info.ppEnabledLayerNames = m_extensions_and_layers.instance_layers.data();
+        create_info
+            .setEnabledExtensionCount(static_cast<uint32_t>(m_extensions_and_layers.instance_extensions.size()))
+            .setPEnabledExtensionNames(m_extensions_and_layers.instance_extensions)
+            .setEnabledLayerCount(static_cast<uint32_t>(m_extensions_and_layers.instance_layers.size()))
+            .setPEnabledLayerNames(m_extensions_and_layers.instance_layers)
+        ;
 
         vk::Instance instance = vk::createInstance(create_info);
         VULKAN_HPP_DEFAULT_DISPATCHER.init(instance);
@@ -69,7 +71,18 @@ namespace avalanche::rendering::vulkan {
     }
 
     vk::Device Context::create_device() const {
-        return nullptr;
+        vk::DeviceCreateInfo device_create_info{};
+        const vk::PhysicalDeviceFeatures2 features = m_primary_physical_device.getFeatures2();
+        device_create_info
+            .setEnabledExtensionCount(static_cast<uint32_t>(m_extensions_and_layers.device_extensions.size()))
+            .setPEnabledExtensionNames(m_extensions_and_layers.device_extensions)
+            .setEnabledLayerCount(static_cast<uint32_t>(m_extensions_and_layers.device_layers.size()))
+            .setPEnabledLayerNames(m_extensions_and_layers.device_layers)
+            .setPEnabledFeatures(nullptr)
+            .setPNext(&features)
+        ;
+
+        return m_primary_physical_device.createDevice(device_create_info);
     }
 
     Context::Context(const DeviceSettings& device_settings)
@@ -78,7 +91,7 @@ namespace avalanche::rendering::vulkan {
             AVALANCHE_CHECK(glfwVulkanSupported(), "GLFW said vulkan isn't supported to using display functionality");
         }
         m_extensions_and_layers = ExtensionAndLayer::create_from_features(m_device_settings.required_features);
-        AVALANCHE_CHECK(m_extensions_and_layers.validate_instance(), "Found invalid layer(s) or extension(s)");
+        AVALANCHE_CHECK(m_extensions_and_layers.validate_instance(), "Found invalid instance layer(s) or extension(s)");
 
         m_instance = create_instance();
 
@@ -88,7 +101,11 @@ namespace avalanche::rendering::vulkan {
         }
 
         m_primary_physical_device = pick_physical_device(m_device_settings.power_preference);
+        AVALANCHE_CHECK(m_extensions_and_layers.validate_device(m_primary_physical_device), "Found invalid device layer(s) or extension(s)");
+
         m_available_queue = make_unique<AvailableQueue>(m_primary_physical_device);
+
+        m_device = create_device();
     }
 
     void Context::init_vulkan_dispatcher() {
