@@ -67,7 +67,7 @@ namespace avalanche {
             }
         }
 
-        shared_ptr_base(shared_ptr_base&& other) : shared_ptr_base() {
+        shared_ptr_base(shared_ptr_base&& other) AVALANCHE_NOEXCEPT : shared_ptr_base() {
             swap(*this, other);
         }
 
@@ -116,8 +116,12 @@ namespace avalanche {
             return m_ptr;
         }
 
-        size_t use_count() const {
+        AVALANCHE_NO_DISCARD size_type use_count() const {
             return m_ctrl_block ? m_ctrl_block->shared_count : 0;
+        }
+
+        operator bool() const AVALANCHE_NOEXCEPT {
+            return use_count() > 0;
         }
     };
 
@@ -196,6 +200,10 @@ namespace avalanche {
             AVALANCHE_CHECK(m_ctrl_block && m_ctrl_block->shared_count > 0, "Trying visit a freed instance (RC=0)");
             return *lock();
         }
+
+        operator bool() const AVALANCHE_NOEXCEPT {
+            return expired();
+        }
     };
 
     template <typename T, typename RefCounter = size_t>
@@ -223,4 +231,13 @@ namespace avalanche {
     private:
         mutable weak_ptr<T> weak_this;
     };
+
+    template <typename T, typename... Args>
+    shared_ptr<T> make_shared(Args&&... args) {
+        using allocator_type = default_allocator<T>;
+        allocator_type allocator{};
+        T* allocated_memory = allocator.allocate(1, nullptr);
+        allocator.construct(allocated_memory, std::forward<Args>(args)...);
+        return shared_ptr_base<T, default_allocator<T>>(allocated_memory);
+    }
 }
