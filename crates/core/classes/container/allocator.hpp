@@ -44,7 +44,7 @@ namespace avalanche {
         simple_allocator(const simple_allocator<U>&) AVALANCHE_NOEXCEPT {}
 
         pointer_type allocate(size_type n, const void* hint = nullptr) {
-            const pointer_type memory = static_cast<pointer_type>(allocate_memory(n * sizeof(T)));
+            pointer_type memory = static_cast<pointer_type>(allocate_memory(n * sizeof(T)));
             return memory;
         }
 

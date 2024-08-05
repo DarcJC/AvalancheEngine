@@ -53,7 +53,7 @@ namespace avalanche::core {
         ResourceHandle allocate_resource_handle(ResourceType resource_type) AVALANCHE_NOEXCEPT {
             return { resource_type, m_current_atomic++ };
         }
-    }
+    };
 
     AVALANCHE_CORE_API std::strong_ordering operator<=>(const ResourceHandle& lhs, const ResourceHandle& rhs) AVALANCHE_NOEXCEPT;
 

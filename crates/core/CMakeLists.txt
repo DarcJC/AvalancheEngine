@@ -6,6 +6,7 @@ set(sources
         "private/container/string.cpp"
         "private/container/allocator.cpp"
         "private/container/exception.cpp"
+        "private/execution/graph.cpp"
 )
 
 avalanche_target(
