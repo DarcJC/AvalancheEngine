@@ -2,10 +2,14 @@
 
 #include <cstdint>
 #include <utility>
+#include <type_traits>
 #include "logger.h"
 #include "container/allocator.hpp"
 
 namespace avalanche {
+
+    template <typename T>
+    class enable_shared_from_this;
 
     template <typename, typename RefCounter = size_t>
     struct control_block {
@@ -44,10 +48,18 @@ namespace avalanche {
             }
         }
 
+        void set_enable_shared_from_this() {
+            if constexpr (std::is_base_of_v<enable_shared_from_this<T>, T>) {
+                m_ptr->weak_this = *this;
+            }
+        }
+
     public:
         shared_ptr_base(nullptr_t = nullptr) : m_ptr(nullptr), m_ctrl_block(nullptr) {}
 
-        explicit shared_ptr_base(pointer_type ptr) : m_ptr(ptr), m_ctrl_block(new control_block<T>()) {}
+        explicit shared_ptr_base(pointer_type ptr) : m_ptr(ptr), m_ctrl_block(new control_block<T>()) {
+            set_enable_shared_from_this();
+        }
 
         shared_ptr_base(const shared_ptr_base& other) : m_ptr(other.m_ptr), m_ctrl_block(other.m_ctrl_block) {
             if (m_ctrl_block) {
@@ -71,6 +83,7 @@ namespace avalanche {
                 if (m_ctrl_block) {
                     ++(m_ctrl_block->shared_count);
                 }
+                set_enable_shared_from_this();
             }
             return *this;
         }
@@ -187,4 +200,27 @@ namespace avalanche {
 
     template <typename T, typename RefCounter = size_t>
     using weak_ptr = weak_ptr_base<T, RefCounter>;
+
+    template <typename T>
+    class enable_shared_from_this {
+    protected:
+        enable_shared_from_this() = default;
+        enable_shared_from_this(const enable_shared_from_this&) = default;
+        enable_shared_from_this& operator=(const enable_shared_from_this&) = default;
+
+    public:
+        shared_ptr<T> shared_from_this() {
+            return weak_this.lock();
+        }
+
+        shared_ptr<const T> shared_from_this() const {
+            return weak_this.lock();
+        }
+
+        template <typename U, AllocatorType Allocator, typename RefCounter>
+        friend class shared_ptr_base;
+
+    private:
+        mutable weak_ptr<T> weak_this;
+    };
 }
