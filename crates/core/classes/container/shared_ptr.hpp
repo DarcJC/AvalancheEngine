@@ -12,7 +12,7 @@ namespace avalanche {
         RefCounter shared_count = 1; // Initially one reference when shared_ptr is created
         RefCounter weak_count = 0;   // No weak pointers initially
 
-        control_block() : shared_count(0), weak_count(0) {}
+        control_block() : shared_count(1), weak_count(0) {}
     };
 
     template <typename T, AllocatorType Allocator = default_allocator<T>, typename RefCounter = size_t>
@@ -75,7 +75,7 @@ namespace avalanche {
             return *this;
         }
 
-        shared_ptr_base& operator=(shared_ptr_base&& other) {
+        shared_ptr_base& operator=(shared_ptr_base&& other) AVALANCHE_NOEXCEPT {
             if (this != &other) {
                 swap(*this, other);
             }
