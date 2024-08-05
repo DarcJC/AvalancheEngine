@@ -39,9 +39,10 @@ namespace avalanche::rendering::vulkan
         index_type acquire_queue_index(EQueueType queue_type);
     };
 
-    class Context {
+    class Context final {
     public:
         explicit Context(const DeviceSettings& device_settings);
+        ~Context();
 
     protected:
         DeviceSettings m_device_settings;

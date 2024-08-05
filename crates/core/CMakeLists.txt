@@ -2,6 +2,7 @@
 set(sources
         "private/core.cpp"
         "private/logger.cpp"
+        "private/resource.cpp"
         "private/container/string.cpp"
         "private/container/allocator.cpp"
         "private/container/exception.cpp"

@@ -108,6 +108,16 @@ namespace avalanche::rendering::vulkan {
         m_device = create_device();
     }
 
+    Context::~Context() {
+        m_device.destroy();
+        if (m_debug_messenger) {
+            m_instance.destroyDebugUtilsMessengerEXT(*m_debug_messenger);
+        }
+        m_debug_messenger.reset();
+        m_instance.destroy();
+        m_available_queue.reset();
+    }
+
     void Context::init_vulkan_dispatcher() {
         AVALANCHE_MAYBE_UNUSED static bool val = ([] () {
             VULKAN_HPP_DEFAULT_DISPATCHER.init();

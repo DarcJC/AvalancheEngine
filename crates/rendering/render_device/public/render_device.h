@@ -19,9 +19,10 @@ namespace avalanche::rendering {
         EGPUPowerPreference power_preference = EGPUPowerPreference::HighPerformance;
     };
 
-    class RenderDevice {
+    class IRenderDevice {
     public:
-        RenderDevice();
+        IRenderDevice();
+        virtual ~IRenderDevice();
     };
 
 }

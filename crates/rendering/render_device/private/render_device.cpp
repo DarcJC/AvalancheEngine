@@ -3,6 +3,9 @@
 //
 #include <render_device.h>
 
-avalanche::rendering::RenderDevice::RenderDevice() {
+avalanche::rendering::IRenderDevice::IRenderDevice() {
+}
+
+avalanche::rendering::IRenderDevice::~IRenderDevice() {
 }
 
