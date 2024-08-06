@@ -120,6 +120,20 @@ namespace avalanche {
             }
             return data();
         }
+
+        value_reference_type operator*() {
+            if (!m_has_value) {
+                raise_exception(invalid_access());
+            }
+            return *data();
+        }
+
+        value_const_reference_type operator*() const {
+            if (!m_has_value) {
+                raise_exception(invalid_access());
+            }
+            return *data();
+        }
     };
 
     template <typename T>
