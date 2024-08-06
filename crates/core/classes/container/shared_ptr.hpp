@@ -11,6 +11,18 @@ namespace avalanche {
     template <typename T>
     class enable_shared_from_this;
 
+    template <typename T, AllocatorType Allocator = default_allocator<T>, typename RefCounter = size_t>
+    class shared_ptr_base;
+
+    template <typename T, AllocatorType Allocator = default_allocator<T>, typename RefCounter = size_t>
+    using shared_ptr = shared_ptr_base<T, Allocator, RefCounter>;
+
+    template <typename T, AllocatorType Allocator = default_allocator<T>, typename RefCounter = size_t>
+    class weak_ptr_base;
+
+    template <typename T, AllocatorType Allocator = default_allocator<T>, typename RefCounter = size_t>
+    using weak_ptr = weak_ptr_base<T, Allocator, RefCounter>;
+
     template <typename, typename RefCounter = size_t>
     struct control_block {
         RefCounter shared_count = 1; // Initially one reference when shared_ptr is created
@@ -19,7 +31,7 @@ namespace avalanche {
         control_block() : shared_count(1), weak_count(0) {}
     };
 
-    template <typename T, AllocatorType Allocator = default_allocator<T>, typename RefCounter = size_t>
+    template <typename T, AllocatorType Allocator, typename RefCounter>
     class shared_ptr_base {
     public:
         using value_type = T;
@@ -50,7 +62,7 @@ namespace avalanche {
 
         void set_enable_shared_from_this() {
             if constexpr (std::is_base_of_v<enable_shared_from_this<T>, T>) {
-                m_ptr->weak_this = *this;
+                m_ptr->weak_this = to_weak_ptr();
             }
         }
 
@@ -95,7 +107,7 @@ namespace avalanche {
             return *this;
         }
 
-        friend void swap(shared_ptr_base& lhs, shared_ptr_base& rhs) {
+        friend void swap(shared_ptr_base& lhs, shared_ptr_base& rhs) AVALANCHE_NOEXCEPT {
             using std::swap;
             swap(lhs.m_ptr, rhs.m_ptr);
             swap(lhs.m_ctrl_block, rhs.m_ctrl_block);
@@ -123,12 +135,20 @@ namespace avalanche {
         operator bool() const AVALANCHE_NOEXCEPT {
             return use_count() > 0;
         }
+
+        weak_ptr<value_type, allocator_type, RefCounter> to_weak_ptr() const {
+            return weak_ptr(*this);
+        }
+
+        explicit operator weak_ptr<value_type, allocator_type, RefCounter>() const AVALANCHE_NOEXCEPT {
+            return to_weak_ptr();
+        }
+
+    private:
+        friend class weak_ptr_base<value_type, allocator_type, RefCounter>;
     };
 
-    template <typename T, AllocatorType Allocator = default_allocator<T>, typename RefCounter = size_t>
-    using shared_ptr = shared_ptr_base<T, Allocator, RefCounter>;
-
-    template <typename T, AllocatorType Allocator = default_allocator<T>, typename RefCounter = size_t>
+    template <typename T, AllocatorType Allocator, typename RefCounter>
     class weak_ptr_base {
     public:
         using value_type = T;
@@ -207,9 +227,6 @@ namespace avalanche {
             return expired();
         }
     };
-
-    template <typename T, AllocatorType Allocator = default_allocator<T>, typename RefCounter = size_t>
-    using weak_ptr = weak_ptr_base<T, Allocator, RefCounter>;
 
     template <typename T>
     class enable_shared_from_this {

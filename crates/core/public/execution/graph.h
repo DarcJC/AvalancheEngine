@@ -50,10 +50,10 @@ namespace avalanche::core::execution {
             , m_topological_sorting(reserved_node_num)
         {
             // Create root node
-            m_nodes.push_back(new_node());
+            new_node();
         }
 
-        weak_ptr<node_type> new_node() {
+        shared_ptr<node_type> new_node() {
             m_nodes.push_back(make_shared<node_type>(m_increase_id_value++));
             m_adjacency_to_list.emplace_back();
             m_in_degree.emplace_back(0);
@@ -64,10 +64,7 @@ namespace avalanche::core::execution {
             return m_nodes.is_valid_index(nid) && m_nodes[nid] && m_nodes[nid]->node_id() == nid;
         }
 
-        void add_edge(const weak_ptr<node_type>& from_node, const weak_ptr<node_type>& to_node) {
-            shared_ptr<node_type> from = from_node.lock();
-            shared_ptr<node_type> to = to_node.lock();
-
+        void add_edge(const shared_ptr<node_type>& from, const shared_ptr<node_type>& to) {
             AVALANCHE_CHECK(from && to, "Trying to connect invalid nodes");
 
             const node_id_type nid_from = from->node_id();
@@ -76,15 +73,30 @@ namespace avalanche::core::execution {
             AVALANCHE_CHECK(!m_adjacency_to_list[nid_from].contains(nid_to), "Edge already exists");
 
             m_adjacency_to_list[nid_from].push_back(nid_to);
-            ++m_in_degree[nid_from];
+            ++m_in_degree[nid_to];
+
+            // Memory barrier to ensure all modifications are visible to the next operations
+            std::atomic_thread_fence(std::memory_order_release);
 
             if (has_cycle()) {
                 m_adjacency_to_list[nid_from].remove_last();
-                --m_in_degree[nid_from];
+                --m_in_degree[nid_to];
                 raise_exception(cycle_detected{});
             }
 
+            // Memory barrier to ensure all read are performed
+            std::atomic_thread_fence(std::memory_order_acquire);
+
             topological_sort();
+        }
+
+        shared_ptr<node_type> get_node_from_id(node_id_type nid) const {
+            AVALANCHE_CHECK(is_node_exist(nid), "Invalid node id");
+            return m_nodes[nid];
+        }
+
+        shared_ptr<node_type> default_root_node() const {
+            return get_node_from_id(0);
         }
 
     protected:
@@ -112,7 +124,7 @@ namespace avalanche::core::execution {
                 }
             }
 
-            return visited_nodes == in_degree.size();
+            return visited_nodes != in_degree.size();
         }
 
         void topological_sort() {
@@ -120,7 +132,7 @@ namespace avalanche::core::execution {
             vector_queue<node_id_type> zero_in_degree_queue{};
             m_topological_sorting.clear();
 
-            for (node_id_type i = 0; i < in_degree.size(); ++i) {
+            for (size_type i = 0; i < in_degree.size(); ++i) {
                 if (in_degree[i] == 0) {
                     zero_in_degree_queue.emplace_back(i);
                 }

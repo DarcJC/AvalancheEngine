@@ -152,13 +152,13 @@ namespace avalanche {
         }
 
         template <typename U = value_type>
-        requires std::convertible_to<U&&, value_type>
+        requires std::constructible_from<value_type, const U&>
         size_type push_back(const U& value) {
             return add_item(value);
         }
 
         template <typename U = value_type>
-        requires std::convertible_to<U&&, value_type>
+        requires std::constructible_from<value_type, U&&>
         size_type push_back(U&& value) {
             return add_item(std::forward<U>(value));
         }
