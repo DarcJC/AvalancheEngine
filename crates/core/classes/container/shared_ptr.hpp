@@ -128,12 +128,14 @@ namespace avalanche {
     template <typename T, AllocatorType Allocator = default_allocator<T>, typename RefCounter = size_t>
     using shared_ptr = shared_ptr_base<T, Allocator, RefCounter>;
 
-    template <typename T, typename RefCounter = size_t>
+    template <typename T, AllocatorType Allocator = default_allocator<T>, typename RefCounter = size_t>
     class weak_ptr_base {
     public:
         using value_type = T;
         using reference_type = value_type&;
         using pointer_type = value_type*;
+        using allocator_type = Allocator;
+        using reference_counter_type = RefCounter;
 
     private:
         pointer_type m_ptr = nullptr;
@@ -142,7 +144,7 @@ namespace avalanche {
     public:
         weak_ptr_base(nullptr_t = nullptr) : m_ptr(nullptr), m_ctrl_block(nullptr) {}
 
-        explicit weak_ptr_base(const shared_ptr<T, RefCounter>& shared) : m_ptr(shared.get()), m_ctrl_block(shared.m_ctrl_block) {
+        explicit weak_ptr_base(const shared_ptr<value_type, allocator_type, reference_counter_type>& shared) : m_ptr(shared.get()), m_ctrl_block(shared.m_ctrl_block) {
             if (m_ctrl_block) {
                 ++(m_ctrl_block->weak_count);
             }
@@ -174,9 +176,9 @@ namespace avalanche {
             }
         }
 
-        shared_ptr<T> lock() const AVALANCHE_NOEXCEPT {
+        shared_ptr<value_type, allocator_type, reference_counter_type> lock() const AVALANCHE_NOEXCEPT {
             if (m_ctrl_block && m_ctrl_block->shared_count > 0) {
-                return shared_ptr<T>(m_ptr, m_ctrl_block);
+                return shared_ptr(m_ptr, m_ctrl_block);
             }
             return nullptr;
         }
@@ -206,8 +208,8 @@ namespace avalanche {
         }
     };
 
-    template <typename T, typename RefCounter = size_t>
-    using weak_ptr = weak_ptr_base<T, RefCounter>;
+    template <typename T, AllocatorType Allocator = default_allocator<T>, typename RefCounter = size_t>
+    using weak_ptr = weak_ptr_base<T, Allocator, RefCounter>;
 
     template <typename T>
     class enable_shared_from_this {
