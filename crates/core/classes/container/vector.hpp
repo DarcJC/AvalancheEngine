@@ -307,12 +307,6 @@ namespace avalanche {
         }
 
         template <typename U = value_type>
-        requires std::equality_comparable_with<const U&, const_reference_type>
-        bool contains(const U& value) {
-            return find(value) != npos;
-        }
-
-        template <typename U = value_type>
         requires std::convertible_to<const U&, value_type>
         bool contains(const U& value) {
             return find(value_type(value)) != npos;
