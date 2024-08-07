@@ -7,6 +7,7 @@
 #include "execution/graph.h"
 #include "execution/generator.h"
 #include "execution/coroutine.h"
+#include "execution/executor.h"
 #include <iostream>
 
 using namespace avalanche::core::execution;
@@ -15,6 +16,11 @@ struct TestNode : public Node<TestNode> {
 public:
     explicit TestNode(const node_id_type id) : Node(id) {}
 };
+
+async foo(const size_t i) {
+    std::cout << "foo-" << i << std::endl;
+    co_return true;
+}
 
 int main(int argc, char* argv[]) {
 
@@ -33,6 +39,10 @@ int main(int argc, char* argv[]) {
     graph.add_edge(root, v);
     AVALANCHE_LOGGER.log(avalanche::core::LogLevel::Info, "{}", graph.is_node_exist(u->node_id()));
     graph.add_edge(u, v);
+
+    for (const size_t i : range<size_t>(0, 2000)) {
+        launch(foo(i));
+    }
 
     return 0;
 }
