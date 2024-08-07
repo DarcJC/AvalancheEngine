@@ -34,23 +34,24 @@ namespace avalanche::core::execution {
         static constexpr size_type default_threads_to_start = 4;
 
         explicit async_coroutine_executor(size_type num_threads = default_threads_to_start);
-        virtual ~async_coroutine_executor();
+        ~async_coroutine_executor();
+
+        async_coroutine_executor(const async_coroutine_executor&) = delete;
+        async_coroutine_executor& operator=(const async_coroutine_executor&) = delete;
+
+        async_coroutine_executor(async_coroutine_executor&& other) AVALANCHE_NOEXCEPT;
+        async_coroutine_executor& operator=(async_coroutine_executor&& other) AVALANCHE_NOEXCEPT;
+        void swap(async_coroutine_executor& other) AVALANCHE_NOEXCEPT;
 
         void enqueue_task(handle_type coro_handle);
-
         void terminate();
-
-        bool is_terminated() const;
+        AVALANCHE_NO_DISCARD bool is_terminated() const;
 
         static async_coroutine_executor& get_global_executor();
 
-    protected:
-        virtual void task_worker();
-
     private:
-        async_task_queue m_queue;
-        std::atomic<bool> m_running{true};
-        vector<std::jthread> m_worker_threads;
+        class impl;
+        impl* m_impl;
     };
 
     struct AVALANCHE_CORE_API async_coroutine_executor::async_awaiter {
@@ -58,13 +59,14 @@ namespace avalanche::core::execution {
         using handle_type = std::coroutine_handle<>;
 
         Outer& parent;
-        handle_type coroutine_handle;
+        handle_type* coroutine_handle = nullptr;
 
-        explicit async_awaiter(handle_type handle);
-        async_awaiter(Outer& outer, handle_type handle);
+        explicit async_awaiter(const handle_type& handle);
+        async_awaiter(Outer& outer, const handle_type& handle);
+        ~async_awaiter();
 
         bool await_ready() const AVALANCHE_NOEXCEPT;
-        void await_suspend(handle_type coroutine_handle) AVALANCHE_NOEXCEPT;
+        void await_suspend(const handle_type& coroutine_handle) AVALANCHE_NOEXCEPT;
         void await_resume() const AVALANCHE_NOEXCEPT;
     };
 

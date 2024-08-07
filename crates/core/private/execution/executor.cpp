@@ -61,8 +61,25 @@ namespace avalanche::core::execution {
         return m_impl->is_empty();
     }
 
+    class async_coroutine_executor::impl {
+    public:
+        explicit impl(size_type num_threads = default_threads_to_start);
+        virtual ~impl();
 
-    async_coroutine_executor::async_coroutine_executor(const size_type num_threads) : m_running(true), m_worker_threads(num_threads) {
+        void enqueue_task(handle_type coro_handle);
+        void terminate();
+        bool is_terminated() const;
+
+    protected:
+        void task_worker();
+
+    private:
+        async_task_queue m_queue;
+        std::atomic<bool> m_running{true};
+        vector<std::jthread> m_worker_threads;
+    };
+
+    async_coroutine_executor::impl::impl(const size_type num_threads) : m_running(true), m_worker_threads(num_threads) {
         AVALANCHE_CHECK(num_threads < 128, "Trying to start too many threads");
         for (size_type i : range<size_type>(0, num_threads)) {
             m_worker_threads.emplace_back([this] {
@@ -71,21 +88,55 @@ namespace avalanche::core::execution {
         }
     }
 
-    async_coroutine_executor::~async_coroutine_executor() {
+    async_coroutine_executor::impl::~impl() {
         terminate();
     }
 
-    void async_coroutine_executor::enqueue_task(const handle_type coro_handle) {
+    void async_coroutine_executor::impl::enqueue_task(const handle_type coro_handle) {
         AVALANCHE_CHECK(!is_terminated(), "Executor has terminated. Enqueuing new tasks is a invalid access.");
         m_queue.push(coro_handle);
     }
 
-    void async_coroutine_executor::terminate() {
+    void async_coroutine_executor::impl::terminate() {
         m_running = false;
     }
 
-    bool async_coroutine_executor::is_terminated() const {
+    bool async_coroutine_executor::impl::is_terminated() const {
         return !m_running;
+    }
+
+    async_coroutine_executor::async_coroutine_executor(size_type num_threads) : m_impl(new impl(num_threads)) {}
+
+    async_coroutine_executor::~async_coroutine_executor() {
+        delete m_impl;
+    }
+
+    async_coroutine_executor::async_coroutine_executor(async_coroutine_executor &&other) AVALANCHE_NOEXCEPT : m_impl(other.m_impl) {
+        other.m_impl = nullptr;
+    }
+
+    async_coroutine_executor& async_coroutine_executor::operator=(async_coroutine_executor &&other) noexcept {
+        async_coroutine_executor(std::move(other)).swap(*this);
+        return *this;
+    }
+
+    void async_coroutine_executor::swap(async_coroutine_executor &other) noexcept {
+        using std::swap;
+        swap(m_impl, other.m_impl);
+    }
+
+    void async_coroutine_executor::enqueue_task(handle_type coro_handle) {
+        AVALANCHE_CHECK(m_impl, "Invalid dispatcher in async_coroutine");
+        m_impl->enqueue_task(coro_handle);
+    }
+
+    void async_coroutine_executor::terminate() {
+        AVALANCHE_CHECK(m_impl, "Invalid dispatcher in async_coroutine");
+        m_impl->terminate();
+    }
+
+    bool async_coroutine_executor::is_terminated() const {
+        return m_impl && m_impl->is_terminated();
     }
 
     async_coroutine_executor& async_coroutine_executor::get_global_executor() {
@@ -93,27 +144,31 @@ namespace avalanche::core::execution {
         return executor;
     }
 
-    void async_coroutine_executor::task_worker() {
+    void async_coroutine_executor::impl::task_worker() {
         while (m_running) {
             handle_type handle =  m_queue.pop();
             handle.resume();
         }
     }
 
-    async_coroutine_executor::async_awaiter::async_awaiter(const handle_type handle)
-        : parent(get_global_executor()), coroutine_handle(handle)
+    async_coroutine_executor::async_awaiter::async_awaiter(const handle_type& handle)
+        : parent(get_global_executor()), coroutine_handle(new handle_type(handle))
     {}
 
-    async_coroutine_executor::async_awaiter::async_awaiter(Outer& outer, const handle_type handle)
+    async_coroutine_executor::async_awaiter::async_awaiter(Outer& outer, const handle_type& handle)
         : parent(outer)
-        , coroutine_handle(handle)
+        , coroutine_handle(new handle_type(handle))
     {}
+
+    async_coroutine_executor::async_awaiter::~async_awaiter() {
+        delete coroutine_handle;
+    }
 
     bool async_coroutine_executor::async_awaiter::await_ready() const AVALANCHE_NOEXCEPT {
         return false;
     }
 
-    void async_coroutine_executor::async_awaiter::await_suspend(const handle_type coroutine_handle) AVALANCHE_NOEXCEPT {
+    void async_coroutine_executor::async_awaiter::await_suspend(const handle_type& coroutine_handle) AVALANCHE_NOEXCEPT {
         parent.enqueue_task(coroutine_handle);
     }
 
