@@ -10,18 +10,20 @@
 
 namespace avalanche::core::execution {
 
-    class AVALANCHE_CORE_API async_task_queue {
+    class AVALANCHE_CORE_API async_task_queue final {
     public:
         using erased_coroutine_handle_type = std::coroutine_handle<void>;
 
         async_task_queue();
+        ~async_task_queue();
 
         void push(erased_coroutine_handle_type coro_handle);
         erased_coroutine_handle_type pop();
+        bool is_empty();
 
     private:
         class impl;
-        unique_ptr<impl> m_impl;
+        impl* m_impl;
     };
 
     class AVALANCHE_CORE_API async_coroutine_executor {

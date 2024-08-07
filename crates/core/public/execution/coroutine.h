@@ -56,6 +56,10 @@ namespace avalanche::core::execution {
             return old;
         }
 
+        awaiter_type operator co_await() {
+            return awaiter_type(m_handle);
+        }
+
     private:
         coroutine_handle_type m_handle;
     };
@@ -106,6 +110,10 @@ namespace avalanche::core::execution {
             return old;
         }
 
+        awaiter_type operator co_await() {
+            return awaiter_type(m_handle);
+        }
+
     private:
         coroutine_handle_type m_handle;
     };
@@ -125,11 +133,6 @@ namespace avalanche::core::execution {
         void return_value(Args&&...) AVALANCHE_NOEXCEPT {}
 
         static void unhandled_exception() { throw; }
-
-        template <typename U>
-        decltype(auto) await_transform(U&& value) {
-            return typename Outer::awaiter_type{ std::forward<U>(value) };
-        }
     };
 
     template <typename AwaiterType>
@@ -146,11 +149,6 @@ namespace avalanche::core::execution {
         void return_void() AVALANCHE_NOEXCEPT {}
 
         static void unhandled_exception() { throw; }
-
-        template <typename U>
-        decltype(auto) await_transform(U&& value) {
-            return typename Outer::awaiter_type{ std::forward<U>(value) };
-        }
     };
 
 }

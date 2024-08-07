@@ -18,8 +18,10 @@ public:
 };
 
 inline async_void foo(const size_t i) {
+    if (i < 2000) {
+        co_await foo(i + 1);
+    }
     std::cout << "foo-" << i << std::endl;
-    co_return;
 }
 
 int main(int argc, char* argv[]) {
@@ -40,9 +42,7 @@ int main(int argc, char* argv[]) {
     AVALANCHE_LOGGER.log(avalanche::core::LogLevel::Info, "{}", graph.is_node_exist(u->node_id()));
     graph.add_edge(u, v);
 
-    for (const size_t i : range<size_t>(0, 2000)) {
-        launch(foo(i));
-    }
+    launch(foo(0));
 
     return 0;
 }

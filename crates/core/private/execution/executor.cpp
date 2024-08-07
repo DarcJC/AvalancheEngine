@@ -30,6 +30,11 @@ namespace avalanche::core::execution {
             return task;
         }
 
+        AVALANCHE_NO_DISCARD bool is_empty() AVALANCHE_NOEXCEPT {
+            std::lock_guard lock(m_mutex);
+            return m_tasks.empty();
+        }
+
     private:
         std::priority_queue<item_type> m_tasks;
         std::mutex m_mutex;
@@ -37,7 +42,11 @@ namespace avalanche::core::execution {
     };
 
     async_task_queue::async_task_queue() {
-        m_impl = make_unique<impl>();
+        m_impl = new impl();
+    }
+
+    async_task_queue::~async_task_queue() {
+        delete m_impl;
     }
 
     void async_task_queue::push(const erased_coroutine_handle_type coro_handle) {
@@ -48,6 +57,11 @@ namespace avalanche::core::execution {
         return m_impl->pop();
     }
 
+    bool async_task_queue::is_empty() {
+        return m_impl->is_empty();
+    }
+
+
     async_coroutine_executor::async_coroutine_executor(const size_type num_threads) : m_running(true), m_worker_threads(num_threads) {
         AVALANCHE_CHECK(num_threads < 128, "Trying to start too many threads");
         for (size_type i : range<size_type>(0, num_threads)) {
@@ -57,7 +71,9 @@ namespace avalanche::core::execution {
         }
     }
 
-    async_coroutine_executor::~async_coroutine_executor() = default;
+    async_coroutine_executor::~async_coroutine_executor() {
+        terminate();
+    }
 
     void async_coroutine_executor::enqueue_task(const handle_type coro_handle) {
         AVALANCHE_CHECK(!is_terminated(), "Executor has terminated. Enqueuing new tasks is a invalid access.");
