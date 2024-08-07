@@ -17,9 +17,9 @@ public:
     explicit TestNode(const node_id_type id) : Node(id) {}
 };
 
-async foo(const size_t i) {
+inline async_void foo(const size_t i) {
     std::cout << "foo-" << i << std::endl;
-    co_return true;
+    co_return;
 }
 
 int main(int argc, char* argv[]) {

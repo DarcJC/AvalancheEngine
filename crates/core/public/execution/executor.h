@@ -66,7 +66,10 @@ namespace avalanche::core::execution {
         void await_resume() const AVALANCHE_NOEXCEPT;
     };
 
-    using async = coroutine<async_coroutine_executor::async_awaiter>;
+    template <typename T = void>
+    using async = coroutine<T, async_coroutine_executor::async_awaiter>;
+
+    using async_void = async<void>;
 
     template <typename Awaitable>
     void launch(Awaitable a) {
