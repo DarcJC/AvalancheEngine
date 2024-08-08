@@ -6,11 +6,13 @@
 #include "logger.h"
 #include "execution/graph.h"
 #include "execution/generator.h"
-#include "execution/coroutine.h"
+#include "execution/sync_coroutine.h"
 #include "execution/executor.h"
 #include <iostream>
 #include <sstream>
+#include <format>
 #include <thread>
+#include <execution/async_coroutine.h>
 
 using namespace avalanche::core::execution;
 
@@ -19,7 +21,7 @@ public:
     explicit TestNode(const node_id_type id) : Node(id) {}
 };
 
-coroutine_context<> foo(int i, const int n = 10) {
+async_coroutine<> foo(int i, const int n = 10) {
     if (i < n) {
         co_await foo(i + 2, n);
     }
@@ -29,7 +31,7 @@ coroutine_context<> foo(int i, const int n = 10) {
     co_return;
 }
 
-coroutine_context<bool> bar() {
+async_coroutine<bool> bar() {
     co_return true;
 }
 
@@ -51,8 +53,8 @@ int main(int argc, char* argv[]) {
     AVALANCHE_LOGGER.log(avalanche::core::LogLevel::Info, "{}", graph.is_node_exist(u->node_id()));
     graph.add_edge(u, v);
 
-    if (bar().resume()) {
-        foo(0, 10).resume();
+    for (int i = 0; i < 10; i++) {
+        launch_async(foo(0, 10));
     }
 
     return 0;

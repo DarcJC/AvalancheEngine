@@ -2,8 +2,6 @@
 
 #include "polyfill.h"
 #include "container/optional.hpp"
-#include "execution/executor.h"
-#include <concepts>
 #include <type_traits>
 #include <coroutine>
 #include <utility>
@@ -11,6 +9,7 @@
 
 namespace avalanche::core::execution {
 
+namespace sync::detail {
     template <typename T = void>
     class coroutine_context {
     public:
@@ -50,7 +49,7 @@ namespace avalanche::core::execution {
             }
         }
 
-    private:
+    protected:
         explicit coroutine_context(const handle_type handle) AVALANCHE_NOEXCEPT
             : m_coro_handle(handle) {}
 
@@ -132,6 +131,7 @@ namespace avalanche::core::execution {
             // Store the continuation in the task's promise so that the final_suspend()
             // knows to resume this coroutine when the task completes.
             promise.continuation = handle;
+
             // Then we tail-resume the task's coroutine, which is currently suspended
             // at the initial-suspend-point (i.e. at the open curly brace), by returning
             // its handle from await_suspend().
@@ -187,5 +187,9 @@ namespace avalanche::core::execution {
             return coro_handle.done();
         }
     };
+}
+
+    template <typename T = void>
+    using sync_coroutine = sync::detail::coroutine_context<T>;
 
 }
