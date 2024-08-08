@@ -59,7 +59,7 @@ namespace detail::async {
         }
 
         awaiter_type operator co_await() && AVALANCHE_NOEXCEPT {
-            return awaiter_type(m_coro_handle, *m_executor);
+            return awaiter_type(m_coro_handle);
         }
 
         self_type set_executor(coroutine_executor_base& executor) {
@@ -177,8 +177,13 @@ namespace detail::async {
             return false;
         }
 
-        decltype(auto) await_suspend(untyped_handle_type handle) AVALANCHE_NOEXCEPT {
+        decltype(auto) await_suspend(handle_type handle) AVALANCHE_NOEXCEPT {
             auto& promise = m_coro_handle.promise();
+
+            // Inheritance parent executor
+            if (handle) {
+                promise.m_executor = handle.promise().m_executor;
+            }
 
             // Store the continuation in the task's promise so that the final_suspend()
             // knows to resume this coroutine when the task completes.
@@ -187,7 +192,7 @@ namespace detail::async {
             // Then we tail-resume the task's coroutine, which is currently suspended
             // at the initial-suspend-point (i.e. at the open curly brace), by returning
             // its handle from await_suspend().
-            m_executor.push_coroutine(m_coro_handle);
+            promise.m_executor->push_coroutine(m_coro_handle);
 
             return !promise.ready.exchange(true, std::memory_order_acq_rel);
         }
@@ -195,10 +200,9 @@ namespace detail::async {
         void await_resume() noexcept {}
 
     private:
-        explicit awaiter_type(handle_type handle, coroutine_executor_base& executor) AVALANCHE_NOEXCEPT : m_coro_handle(handle), m_executor(executor) {}
+        explicit awaiter_type(handle_type handle) AVALANCHE_NOEXCEPT : m_coro_handle(handle) {}
 
         handle_type m_coro_handle;
-        coroutine_executor_base& m_executor;
 
         friend coroutine_context<T>;
     };

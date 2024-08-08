@@ -23,7 +23,7 @@ public:
 
 async_void foo(int i, const int n = 10) {
     if (i < n) {
-        co_await foo(i + 2, n).set_executor(sync_coroutine_executor::get_global_executor());
+        co_await foo(i + 2, n);
     }
     std::stringstream ss;
     ss << "[thread-" << std::this_thread::get_id() << "] " << "foo-" << i << std::endl;
