@@ -18,13 +18,14 @@ public:
     explicit TestNode(const node_id_type id) : Node(id) {}
 };
 
-inline async_void foo(const size_t i) {
-    if (i < 2) {
-        co_await foo(i + 1);
+coroutine_context<> foo(int i, const int n = 10) {
+    if (i < n) {
+        co_await foo(i + 1, n);
     }
     std::stringstream ss;
     ss << "foo-" << i << std::endl;
     std::cout << ss.str();
+    co_return;
 }
 
 int main(int argc, char* argv[]) {
@@ -45,7 +46,7 @@ int main(int argc, char* argv[]) {
     AVALANCHE_LOGGER.log(avalanche::core::LogLevel::Info, "{}", graph.is_node_exist(u->node_id()));
     graph.add_edge(u, v);
 
-    launch(foo(0));
+    sync_coroutine_context::start(foo(0, 10));
 
     while (!async_coroutine_executor::get_global_executor().is_queue_empty()) {
     }

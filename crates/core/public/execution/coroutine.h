@@ -4,156 +4,180 @@
 #include "container/optional.hpp"
 #include <concepts>
 #include <type_traits>
+#include <atomic>
 #include <coroutine>
 #include <utility>
 
 
 namespace avalanche::core::execution {
 
-    template <typename T, typename AwaiterType>
-    class coroutine {
+    template <typename=void>
+    class coroutine_context {
     public:
-        struct promise_type;
-        using coroutine_handle_type = std::coroutine_handle<promise_type>;
-        using awaiter_type = AwaiterType;
+        class promise_base;
+        class promise_type;
+        class awaiter_type;
+        using handle_type = std::coroutine_handle<promise_type>;
+        using untyped_handle_type = std::coroutine_handle<void>;
 
-        explicit coroutine(coroutine_handle_type coroutine_handle) : m_handle(coroutine_handle) {}
-        ~coroutine() {
-            reset();
-        }
+        coroutine_context(coroutine_context&&) AVALANCHE_NOEXCEPT
+            : m_coro_handle(std::exchange(m_coro_handle, {})) {}
 
-        coroutine(const coroutine&) = delete;
-        coroutine& operator=(const coroutine&) = delete;
-
-        coroutine(coroutine &&other) AVALANCHE_NOEXCEPT {
-            swap(other);
-        }
-        coroutine& operator=(coroutine &&other) AVALANCHE_NOEXCEPT {
-            coroutine(std::move(other)).swap(*this);
+        coroutine_context& operator=(coroutine_context&&) AVALANCHE_NOEXCEPT {
+            m_coro_handle = std::exchange(m_coro_handle, {});
             return *this;
         }
 
-        void reset() {
-            if (m_handle) {
-                m_handle.destroy();
+        ~coroutine_context() AVALANCHE_NOEXCEPT{
+            if (m_coro_handle) {
+                m_coro_handle.destroy();
             }
         }
 
-        void swap(coroutine &other) AVALANCHE_NOEXCEPT {
-            using std::swap;
-            swap(m_handle, other.m_handle);
+        awaiter_type operator co_await() && AVALANCHE_NOEXCEPT {
+            return awaiter_type(m_coro_handle);
         }
 
-        void resume() const {
-            AVALANCHE_CHECK(m_handle, "Trying to resume a non-existent coroutine handle");
-            m_handle.resume();
-        }
-
-        coroutine_handle_type release() {
-            AVALANCHE_CHECK(m_handle, "Trying to release a non-existent coroutine handle");
-            coroutine_handle_type old = m_handle;
-            m_handle = nullptr;
-            return old;
-        }
-
-        awaiter_type operator co_await() {
-            return awaiter_type(m_handle);
+        void resume() {
+            if (m_coro_handle) {
+                m_coro_handle.resume();
+            }
         }
 
     private:
-        coroutine_handle_type m_handle;
+        explicit coroutine_context(const handle_type handle) AVALANCHE_NOEXCEPT
+            : m_coro_handle(handle) {}
+
+        handle_type m_coro_handle;
     };
 
-    template <typename AwaiterType>
-    class coroutine<void, AwaiterType> {
+    template <typename T>
+    class coroutine_context<T>::promise_base {
     public:
+        using Outer = coroutine_context;
+
+        constexpr std::suspend_always initial_suspend() AVALANCHE_NOEXCEPT { return {}; }
+
+        void unhandled_exception() {
+            // Rethrow to our terminate handler
+            throw;
+        }
+
+        struct final_awaiter {
+            bool await_ready() const AVALANCHE_NOEXCEPT { return false; }
+            void await_suspend(handle_type handle) AVALANCHE_NOEXCEPT {
+                auto& promise = handle.promise();
+                // The coroutine is now suspended at the final-suspend point.
+                // Lookup its continuation in the promise and resume it.
+                if (promise.continuation && promise.ready.exchange(true, std::memory_order_acq_rel)) {
+                    promise.continuation.resume();
+                }
+            }
+            void await_resume() const AVALANCHE_NOEXCEPT {}
+        };
+
+        final_awaiter final_suspend() AVALANCHE_NOEXCEPT {
+            return {};
+        }
+
+        untyped_handle_type continuation{};
+        std::atomic<bool> ready = false;
+    };
+
+    template <typename T>
+    class coroutine_context<T>::promise_type : public coroutine_context<T>::promise_base {
+    public:
+        using Super = typename coroutine_context<T>::promise_base;
+
+        typename Super::Outer get_return_object() AVALANCHE_NOEXCEPT {
+            return Outer(handle_type::from_promise(*this));
+        }
+
+        void return_value(T&& value) {
+        }
+    };
+
+    template <>
+    class coroutine_context<void>::promise_type : public coroutine_context<void>::promise_base {
+    public:
+        using Super = typename coroutine_context<void>::promise_base;
+
+        Super::Outer get_return_object() AVALANCHE_NOEXCEPT {
+            return Super::Outer(handle_type::from_promise(*this));
+        }
+
+        void return_void() {}
+    };
+
+    template <typename T>
+    class coroutine_context<T>::awaiter_type {
+    public:
+        bool await_ready() AVALANCHE_NOEXCEPT {
+            return false;
+        }
+
+        bool await_suspend(untyped_handle_type handle) AVALANCHE_NOEXCEPT {
+            auto& promise = m_coro_handle.promise();
+
+            // Store the continuation in the task's promise so that the final_suspend()
+            // knows to resume this coroutine when the task completes.
+            promise.continuation = handle;
+
+            // Then we resume the task's coroutine, which is currently suspended
+            // at the initial-suspend-point (i.e. at the open curly brace).
+            m_coro_handle.resume();
+
+            return !promise.ready.exchange(true, std::memory_order_acq_rel);
+        }
+
+        void await_resume() noexcept {}
+
+    private:
+        explicit awaiter_type(handle_type handle) AVALANCHE_NOEXCEPT : m_coro_handle(handle) {}
+
+        handle_type m_coro_handle;
+
+        friend coroutine_context<T>;
+    };
+
+    struct sync_coroutine_context {
         struct promise_type;
-        using coroutine_handle_type = std::coroutine_handle<promise_type>;
-        using awaiter_type = AwaiterType;
+        using handle_type = std::coroutine_handle<promise_type>;
 
-        explicit coroutine(coroutine_handle_type coroutine_handle) : m_handle(coroutine_handle) {}
-        ~coroutine() {
-            reset();
-        }
+        handle_type coro_handle;
 
-        coroutine(const coroutine&) = delete;
-        coroutine& operator=(const coroutine&) = delete;
+        explicit sync_coroutine_context(handle_type handle) AVALANCHE_NOEXCEPT : coro_handle(handle) {}
 
-        coroutine(coroutine &&other) AVALANCHE_NOEXCEPT {
-            swap(other);
-        }
-        coroutine& operator=(coroutine &&other) AVALANCHE_NOEXCEPT {
-            coroutine(std::move(other)).swap(*this);
-            return *this;
-        }
-
-        void reset() {
-            if (m_handle) {
-                m_handle.destroy();
+        sync_coroutine_context(sync_coroutine_context&& other) AVALANCHE_NOEXCEPT : coro_handle(std::exchange(other.coro_handle, {})) {}
+        ~sync_coroutine_context() AVALANCHE_NOEXCEPT {
+            if (coro_handle) {
+                coro_handle.destroy();
             }
         }
 
-        void swap(coroutine &other) AVALANCHE_NOEXCEPT {
-            using std::swap;
-            swap(m_handle, other.m_handle);
+        struct promise_type {
+            using Outer = sync_coroutine_context;
+
+            Outer get_return_object() AVALANCHE_NOEXCEPT {
+                return Outer(handle_type::from_promise(*this));
+            }
+
+            std::suspend_never initial_suspend() AVALANCHE_NOEXCEPT { return {}; }
+            std::suspend_always final_suspend() AVALANCHE_NOEXCEPT { return {}; }
+
+            void return_void() AVALANCHE_NOEXCEPT {}
+
+            void unhandled_exception() { throw; }
+        };
+
+        template <typename T>
+        static sync_coroutine_context start(T&& coro) AVALANCHE_NOEXCEPT {
+            co_await std::forward<T>(coro);
         }
 
-        void resume() const {
-            AVALANCHE_CHECK(m_handle, "Trying to resume a non-existent coroutine handle");
-            m_handle.resume();
+        bool done() const AVALANCHE_NOEXCEPT {
+            return coro_handle.done();
         }
-
-        coroutine_handle_type release() {
-            AVALANCHE_CHECK(m_handle, "Trying to release a non-existent coroutine handle");
-            coroutine_handle_type old = m_handle;
-            m_handle = nullptr;
-            return old;
-        }
-
-        awaiter_type operator co_await() {
-            return awaiter_type(m_handle);
-        }
-
-    private:
-        coroutine_handle_type m_handle;
-    };
-
-    template <typename T, typename AwaiterType>
-    struct coroutine<T, AwaiterType>::promise_type {
-        using Outer = coroutine<T, AwaiterType>;
-
-        decltype(auto) get_return_object() {
-            return coroutine(Outer::coroutine_handle_type::from_promise(*this));
-        }
-
-        static std::suspend_always initial_suspend() AVALANCHE_NOEXCEPT { return {}; }
-        static std::suspend_always final_suspend() AVALANCHE_NOEXCEPT { return {};}
-
-        template <typename... Args>
-        void return_value(Args&&...) AVALANCHE_NOEXCEPT {}
-
-        static void unhandled_exception() { throw; }
-    };
-
-    template <typename AwaiterType>
-    struct coroutine<void, AwaiterType>::promise_type {
-        using Outer = coroutine<void, AwaiterType>;
-
-        decltype(auto) get_return_object() {
-            return coroutine(Outer::coroutine_handle_type::from_promise(*this));
-        }
-
-        static std::suspend_always initial_suspend() AVALANCHE_NOEXCEPT { return {}; }
-        static std::suspend_always final_suspend() AVALANCHE_NOEXCEPT { return {};}
-
-        void return_void() AVALANCHE_NOEXCEPT {}
-
-        template <typename U>
-        auto await_transform(coroutine<U, AwaiterType>&& other) {
-            return AwaiterType(other.release());
-        }
-
-        static void unhandled_exception() { throw; }
     };
 
 }

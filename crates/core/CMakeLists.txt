@@ -8,6 +8,7 @@ set(sources
         "private/container/exception.cpp"
         "private/execution/graph.cpp"
         "private/execution/executor.cpp"
+        "private/execution/coroutine.cpp"
 )
 
 avalanche_target(
