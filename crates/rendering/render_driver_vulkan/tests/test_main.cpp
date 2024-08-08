@@ -10,6 +10,7 @@
 #include "execution/executor.h"
 #include <iostream>
 #include <sstream>
+#include <thread>
 
 using namespace avalanche::core::execution;
 
@@ -20,10 +21,10 @@ public:
 
 coroutine_context<> foo(int i, const int n = 10) {
     if (i < n) {
-        co_await foo(i + 1, n);
+        co_await foo(i + 2, n);
     }
     std::stringstream ss;
-    ss << "foo-" << i << std::endl;
+    ss << "[thread-" << std::this_thread::get_id() << "] " << "foo-" << i << std::endl;
     std::cout << ss.str();
     co_return;
 }
@@ -47,9 +48,6 @@ int main(int argc, char* argv[]) {
     graph.add_edge(u, v);
 
     sync_coroutine_context::start(foo(0, 10));
-
-    while (!async_coroutine_executor::get_global_executor().is_queue_empty()) {
-    }
 
     return 0;
 }
