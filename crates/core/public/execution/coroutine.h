@@ -1,6 +1,8 @@
 #pragma once
 
 #include "polyfill.h"
+#include "container/optional.hpp"
+#include "execution/executor.h"
 #include <concepts>
 #include <type_traits>
 #include <coroutine>
@@ -9,7 +11,7 @@
 
 namespace avalanche::core::execution {
 
-    template <typename=void>
+    template <typename T = void>
     class coroutine_context {
     public:
         class promise_base;
@@ -18,11 +20,11 @@ namespace avalanche::core::execution {
         using handle_type = std::coroutine_handle<promise_type>;
         using untyped_handle_type = std::coroutine_handle<void>;
 
-        coroutine_context(coroutine_context&&) AVALANCHE_NOEXCEPT
-            : m_coro_handle(std::exchange(m_coro_handle, {})) {}
+        coroutine_context(coroutine_context&& other) AVALANCHE_NOEXCEPT
+            : m_coro_handle(std::exchange(other.m_coro_handle, {})) {}
 
-        coroutine_context& operator=(coroutine_context&&) AVALANCHE_NOEXCEPT {
-            m_coro_handle = std::exchange(m_coro_handle, {});
+        coroutine_context& operator=(coroutine_context&& other) AVALANCHE_NOEXCEPT {
+            m_coro_handle = std::exchange(other.m_coro_handle, {});
             return *this;
         }
 
@@ -36,9 +38,15 @@ namespace avalanche::core::execution {
             return awaiter_type(m_coro_handle);
         }
 
-        void resume() {
+        T resume() {
             if (m_coro_handle) {
                 m_coro_handle.resume();
+            }
+            if constexpr (!std::is_same_v<T, void>) {
+                return *m_coro_handle.promise().result;
+            } else {
+                // Make clangd happy
+                return;
             }
         }
 
@@ -63,11 +71,15 @@ namespace avalanche::core::execution {
 
         struct final_awaiter {
             bool await_ready() const AVALANCHE_NOEXCEPT { return false; }
-            decltype(auto) await_suspend(handle_type handle) AVALANCHE_NOEXCEPT {
+            untyped_handle_type await_suspend(handle_type handle) AVALANCHE_NOEXCEPT {
                 auto& promise = handle.promise();
+
                 // The coroutine is now suspended at the final-suspend point.
                 // Lookup its continuation in the promise and resume it symmetrically.
-                return promise.continuation;
+                if (promise.continuation)
+                    return promise.continuation;
+                else
+                    return std::noop_coroutine();
             }
             void await_resume() const AVALANCHE_NOEXCEPT {}
         };
@@ -85,11 +97,14 @@ namespace avalanche::core::execution {
         using Super = coroutine_context<T>::promise_base;
 
         typename Super::Outer get_return_object() AVALANCHE_NOEXCEPT {
-            return Outer(handle_type::from_promise(*this));
+            return Super::Outer(handle_type::from_promise(*this));
         }
 
         void return_value(T&& value) {
+            result = std::forward<T>(value);
         }
+
+        optional<T> result{};
     };
 
     template <>

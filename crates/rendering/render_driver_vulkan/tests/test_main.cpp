@@ -29,6 +29,10 @@ coroutine_context<> foo(int i, const int n = 10) {
     co_return;
 }
 
+coroutine_context<bool> bar() {
+    co_return true;
+}
+
 int main(int argc, char* argv[]) {
 
     using namespace avalanche::rendering;
@@ -47,7 +51,9 @@ int main(int argc, char* argv[]) {
     AVALANCHE_LOGGER.log(avalanche::core::LogLevel::Info, "{}", graph.is_node_exist(u->node_id()));
     graph.add_edge(u, v);
 
-    sync_coroutine_context::start(foo(0, 10));
+    if (bar().resume()) {
+        foo(0, 10).resume();
+    }
 
     return 0;
 }

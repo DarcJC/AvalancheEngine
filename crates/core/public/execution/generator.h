@@ -1,6 +1,7 @@
 #pragma once
 
 #include "polyfill.h"
+#include "container/optional.hpp"
 #include <concepts>
 #include <coroutine>
 #include <type_traits>
