@@ -1,5 +1,6 @@
 #pragma once
 
+#include "container/vector.hpp"
 
 namespace avalanche {
 
