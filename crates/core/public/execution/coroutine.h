@@ -148,6 +148,11 @@ namespace avalanche::core::execution {
 
         void return_void() AVALANCHE_NOEXCEPT {}
 
+        template <typename U>
+        auto await_transform(coroutine<U, AwaiterType>&& other) {
+            return AwaiterType(other.release());
+        }
+
         static void unhandled_exception() { throw; }
     };
 

@@ -9,6 +9,7 @@
 #include "execution/coroutine.h"
 #include "execution/executor.h"
 #include <iostream>
+#include <sstream>
 
 using namespace avalanche::core::execution;
 
@@ -18,10 +19,12 @@ public:
 };
 
 inline async_void foo(const size_t i) {
-    if (i < 2000) {
+    if (i < 2) {
         co_await foo(i + 1);
     }
-    std::cout << "foo-" << i << std::endl;
+    std::stringstream ss;
+    ss << "foo-" << i << std::endl;
+    std::cout << ss.str();
 }
 
 int main(int argc, char* argv[]) {
@@ -43,6 +46,9 @@ int main(int argc, char* argv[]) {
     graph.add_edge(u, v);
 
     launch(foo(0));
+
+    while (!async_coroutine_executor::get_global_executor().is_queue_empty()) {
+    }
 
     return 0;
 }

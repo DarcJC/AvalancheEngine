@@ -45,7 +45,8 @@ namespace avalanche::core::execution {
 
         void enqueue_task(handle_type coro_handle);
         void terminate();
-        AVALANCHE_NO_DISCARD bool is_terminated() const;
+        AVALANCHE_NO_DISCARD bool is_terminated() const AVALANCHE_NOEXCEPT;
+        AVALANCHE_NO_DISCARD bool is_queue_empty() const AVALANCHE_NOEXCEPT;
 
         static async_coroutine_executor& get_global_executor();
 
@@ -54,20 +55,37 @@ namespace avalanche::core::execution {
         impl* m_impl;
     };
 
-    struct AVALANCHE_CORE_API async_coroutine_executor::async_awaiter {
+    struct async_coroutine_executor::async_awaiter {
         using Outer = async_coroutine_executor;
         using handle_type = std::coroutine_handle<>;
 
         Outer& parent;
         handle_type* coroutine_handle = nullptr;
 
-        explicit async_awaiter(const handle_type& handle);
-        async_awaiter(Outer& outer, const handle_type& handle);
-        ~async_awaiter();
+        explicit async_awaiter(const handle_type& handle)
+            : parent(get_global_executor()), coroutine_handle(new handle_type(handle)) {
+            // parent.enqueue_task(*coroutine_handle);
+        }
 
-        bool await_ready() const AVALANCHE_NOEXCEPT;
-        void await_suspend(const handle_type& coroutine_handle) AVALANCHE_NOEXCEPT;
-        void await_resume() const AVALANCHE_NOEXCEPT;
+        async_awaiter(Outer& outer, const handle_type& handle)
+            : parent(outer)
+            , coroutine_handle(new handle_type(handle)) {
+            // parent.enqueue_task(*coroutine_handle);
+        }
+
+        ~async_awaiter() {
+            delete coroutine_handle;
+        }
+
+        bool await_ready() const AVALANCHE_NOEXCEPT {
+            return false;
+        }
+
+        void await_suspend(const handle_type& coroutine_handle) AVALANCHE_NOEXCEPT {
+            parent.enqueue_task(coroutine_handle);
+        }
+
+        void await_resume() const AVALANCHE_NOEXCEPT {}
     };
 
     template <typename T = void>
