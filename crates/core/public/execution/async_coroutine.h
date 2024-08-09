@@ -5,7 +5,6 @@
 #include "container/vector_queue.hpp"
 #include "execution/executor.h"
 #include "container/shared_ptr.hpp"
-#include "container/allocator.hpp"
 #include <type_traits>
 #include <coroutine>
 #include <utility>
@@ -102,9 +101,12 @@ namespace detail::async {
         shared_state_type require_shared_state() {
             AVALANCHE_CHECK(m_coro_handle && !m_coro_handle.promise().m_state, "Invalid coroutine context. Check if you require_shared_state() twice.");
             auto& promise = m_coro_handle.promise();
-            shared_state_type state = avalanche::make_atomic_shared<coroutine_state<T>>(unsafe_release());
-            promise.m_state = state;
-            return state;
+            if (!promise.m_state) {
+                shared_state_type state = avalanche::make_atomic_shared<coroutine_state<T>>(unsafe_release());
+                promise.m_state = state;
+                return state;
+            }
+            return nullptr;
         }
 
     protected:
@@ -119,7 +121,7 @@ namespace detail::async {
     };
 
     template <typename T>
-    class coroutine_state : public avalanche::enable_atomic_shared_from_this<coroutine_state<T>> {
+    class coroutine_state {
     public:
         using handle_type = typename coroutine_context<T>::handle_type;
         using callback_type = typename coroutine_context<T>::callback_type;
@@ -199,21 +201,21 @@ namespace detail::async {
 
         struct final_awaiter {
             bool await_ready() const AVALANCHE_NOEXCEPT { return false; }
-            void await_suspend(handle_type handle) AVALANCHE_NOEXCEPT {
+            decltype(auto) await_suspend(handle_type handle) AVALANCHE_NOEXCEPT {
                 auto& promise = handle.promise();
+
+                // Notify callbacks
+                if (shared_state ptr = promise.m_state.lock()) AVALANCHE_UNLIKELY_BRANCH {
+                    ptr->notify_finished();
+                }
 
                 // The coroutine is now suspended at the final-suspend point.
                 // Lookup its continuation in the promise and resume it symmetrically.
-                if (promise.ready.exchange(true, std::memory_order_acq_rel)) {
-                    if (promise.continuation) {
-                        m_executor->push_coroutine(promise.continuation);
-                    }
+                if (promise.continuation) AVALANCHE_LIKELY_BRANCH {
+                    m_executor->push_coroutine(promise.continuation);
                 }
 
-                // Notify callbacks
-                // if (shared_state ptr = promise.m_state.lock()) {
-                //     ptr->notify_finished();
-                // }
+                return true;
             }
             void await_resume() const AVALANCHE_NOEXCEPT {}
 
@@ -293,7 +295,7 @@ namespace detail::async {
             // its handle from await_suspend().
             promise.m_executor->push_coroutine(m_coro_handle);
 
-            return !promise.ready.exchange(true, std::memory_order_acq_rel);
+            return true;
         }
 
         void await_resume() noexcept {}

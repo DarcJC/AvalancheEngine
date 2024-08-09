@@ -4,7 +4,6 @@
 #include <atomic>
 #include <utility>
 #include <type_traits>
-#include <iostream>
 #include "logger.h"
 #include "container/allocator.hpp"
 
@@ -57,7 +56,7 @@ namespace avalanche {
             if (m_ctrl_block) {
                 size_type count;
                 if (is_atomic_counter) {
-                    count = m_ctrl_block->shared_count.fetch_sub(1, std::memory_order_relaxed) - 1;
+                    count = m_ctrl_block->shared_count.fetch_sub(1, std::memory_order_acquire) - 1;
                 } else {
                     count = --(m_ctrl_block->shared_count);
                 }
@@ -103,7 +102,9 @@ namespace avalanche {
             set_enable_shared_from_this();
         }
 
-        shared_ptr_base(const shared_ptr_base& other) : m_ptr(other.m_ptr), m_ctrl_block(other.m_ctrl_block) {
+        shared_ptr_base(const shared_ptr_base& other) {
+            m_ptr = other.m_ptr;
+            m_ctrl_block = other.m_ctrl_block;
             if (m_ctrl_block) {
                 increase_shared_count();
             }
@@ -209,7 +210,7 @@ namespace avalanche {
                     if (weak_count == 0) {
                         std::atomic_thread_fence(std::memory_order_acquire);
 
-                        if (m_ctrl_block->shared_count.load(std::memory_order_relaxed) == 0) {
+                        if (m_ctrl_block->weak_count.load(std::memory_order_relaxed) == 0) {
                             delete m_ctrl_block;
                         }
                     }

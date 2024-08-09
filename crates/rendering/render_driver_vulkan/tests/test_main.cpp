@@ -73,10 +73,11 @@ int main(int argc, char* argv[]) {
     //     .set_executor(sync_coroutine_executor::get_global_executor())
     //     .launch();
 
-    auto state = loop_noop(1000)
+    auto state = loop_noop(1000000)
+        // .set_executor(sync_coroutine_executor::get_global_executor())
         .launch();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+    std::this_thread::sleep_for(std::chrono::milliseconds(9999000));
     threaded_coroutine_executor::get_global_executor().wait_for_all_jobs(0);
     // for (int i = 0; i < 10; i++) {
     //     foo(0, 10).launch();
