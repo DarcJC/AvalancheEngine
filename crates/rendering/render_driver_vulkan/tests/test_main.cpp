@@ -23,7 +23,7 @@ public:
 
 async_void foo(int i, const int n = 10) {
     if (i < n) {
-        co_await foo(i + 2, n);
+        co_await foo(i + 2, n).set_executor(sync_coroutine_executor::get_global_executor());
     }
     std::stringstream ss;
     ss << "[thread-" << std::this_thread::get_id() << "] " << "foo-" << i << std::endl;
@@ -53,7 +53,7 @@ int main(int argc, char* argv[]) {
     AVALANCHE_LOGGER.log(avalanche::core::LogLevel::Info, "{}", graph.is_node_exist(u->node_id()));
     graph.add_edge(u, v);
 
-    auto coro = foo(5, 10)
+    foo(5, 10)
         .set_executor(avalanche::core::execution::sync_coroutine_executor::get_global_executor())
         .launch();
     // for (int i = 0; i < 10; i++) {

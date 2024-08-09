@@ -63,8 +63,11 @@ namespace detail::async {
         }
 
         self_type set_executor(coroutine_executor_base& executor) {
-            m_executor = &executor;
-            m_coro_handle.promise().m_executor = m_executor;
+            if (m_executor != &executor) {
+                m_executor = &executor;
+                m_coro_handle.promise().m_executor = m_executor;
+                m_coro_handle.promise().inherit_executor = false;
+            }
             return std::move(*this);
         }
 
@@ -72,9 +75,8 @@ namespace detail::async {
          * @brief Launch a coroutine context in a **non-coroutine** context.
          * Don't launch after co_await, unless you know what are you doing
          */
-        self_type launch() AVALANCHE_NOEXCEPT {
+        void launch() AVALANCHE_NOEXCEPT {
             m_executor->push_coroutine(m_coro_handle);
-            return std::move(*this);
         }
 
         /**
@@ -139,6 +141,7 @@ namespace detail::async {
 
         untyped_handle_type continuation{};
         std::atomic<bool> ready = false;
+        bool inherit_executor = true;
         coroutine_executor_base* m_executor = nullptr;
     };
 
@@ -182,7 +185,9 @@ namespace detail::async {
 
             // Inheritance parent executor
             if (handle) {
-                promise.m_executor = handle.promise().m_executor;
+                if (promise.inherit_executor) {
+                    promise.m_executor = handle.promise().m_executor;
+                }
             }
 
             // Store the continuation in the task's promise so that the final_suspend()
