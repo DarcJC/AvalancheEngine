@@ -109,6 +109,14 @@ namespace detail::async {
             return nullptr;
         }
 
+        self_type sync() AVALANCHE_NOEXCEPT {
+            return set_executor(sync_coroutine_executor::get_global_executor());
+        }
+
+        self_type async() AVALANCHE_NOEXCEPT {
+            return set_executor(threaded_coroutine_executor::get_global_executor());
+        }
+
     protected:
         explicit coroutine_context(const handle_type handle) AVALANCHE_NOEXCEPT
             : m_coro_handle(handle)

@@ -22,18 +22,16 @@ public:
     explicit TestNode(const node_id_type id) : Node(id) {}
 };
 
+inline async_bool bar() {
+    co_return true;
+}
+
 inline async_void foo(int i, const int n = 10) {
     if (i < n) {
         co_await foo(i + 2, n).set_executor(sync_coroutine_executor::get_global_executor());
     }
-    std::stringstream ss;
-    ss << "[thread-" << std::this_thread::get_id() << "] " << "foo-" << i << std::endl;
-    std::cout << ss.str();
+    AVALANCHE_LOGGER.critical("[thread-{}] foo-{}",std::this_thread::get_id(), i);
     co_return;
-}
-
-inline async_bool bar() {
-    co_return true;
 }
 
 inline async_void noop() {
@@ -69,16 +67,19 @@ int main(int argc, char* argv[]) {
     // AVALANCHE_LOGGER.log(avalanche::core::LogLevel::Info, "{}", graph.is_node_exist(u->node_id()));
     // graph.add_edge(u, v);
 
-    // auto data = foo(5, 10)
-    //     .set_executor(sync_coroutine_executor::get_global_executor())
-    //     .launch();
+    decltype(foo(5, 10).launch()) state;
+    bar().sync().launch()->then([&state] (bool b) mutable {
+        if (b) {
+            state = foo(5, 100).async().launch();
+        }
+    });
 
-    auto state = loop_noop(1000000)
-        // .set_executor(sync_coroutine_executor::get_global_executor())
+    auto qwq = loop_noop(1000000)
+        .set_executor(sync_coroutine_executor::get_global_executor())
         .launch();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(9999000));
-    threaded_coroutine_executor::get_global_executor().wait_for_all_jobs(0);
+    // threaded_coroutine_executor::get_global_executor().wait_for_all_jobs(0);
     // for (int i = 0; i < 10; i++) {
     //     foo(0, 10).launch();
     // }
