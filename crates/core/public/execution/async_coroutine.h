@@ -4,12 +4,15 @@
 #include "container/optional.hpp"
 #include "container/vector_queue.hpp"
 #include "execution/executor.h"
+#include "container/shared_ptr.hpp"
+#include "container/allocator.hpp"
 #include <type_traits>
 #include <coroutine>
 #include <utility>
 #include <concepts>
 #include <atomic>
 #include <functional>
+#include <mutex>
 
 
 namespace avalanche::core::execution {
@@ -17,14 +20,17 @@ namespace avalanche::core::execution {
 namespace detail::async {
 
     template <typename T>
-    struct no_sucking_void {
+    struct type_reference_but_void {
         using type = T&;
     };
 
     template <>
-    struct no_sucking_void<void> {
+    struct type_reference_but_void<void> {
         using type = void;
     };
+
+    template <typename T>
+    class coroutine_state;
 
     template <typename T = void>
     class coroutine_context {
@@ -34,8 +40,10 @@ namespace detail::async {
         class awaiter_type;
         using handle_type = std::coroutine_handle<promise_type>;
         using untyped_handle_type = std::coroutine_handle<void>;
-        using callback_type = std::function<void(typename no_sucking_void<T>::type)>;
+        using callback_type = std::function<void(typename type_reference_but_void<T>::type)>;
         using self_type = coroutine_context;
+        using state_type = coroutine_state<T>;
+        using shared_state_type = avalanche::atomic_shared_ptr<state_type>;
         static coroutine_executor_base* get_default_executor() {
             static coroutine_executor_base* executor = &threaded_coroutine_executor::get_global_executor();
             return executor;
@@ -75,8 +83,11 @@ namespace detail::async {
          * @brief Launch a coroutine context in a **non-coroutine** context.
          * Don't launch after co_await, unless you know what are you doing
          */
-        void launch() AVALANCHE_NOEXCEPT {
-            m_executor->push_coroutine(m_coro_handle);
+        shared_state_type launch() AVALANCHE_NOEXCEPT {
+            handle_type h = m_coro_handle;
+            shared_state_type state = require_shared_state();
+            m_executor->push_coroutine(h);
+            return state;
         }
 
         /**
@@ -84,14 +95,16 @@ namespace detail::async {
          * @return The coroutine handle
          */
         handle_type unsafe_release() AVALANCHE_NOEXCEPT {
+            AVALANCHE_CHECK(m_coro_handle, "Trying to release coroutine that was already released");
             return std::exchange(m_coro_handle, {});
         }
 
-        self_type then(callback_type callback) {
-            AVALANCHE_CHECK(m_coro_handle, "Using invalid coroutine context");
-            if (m_coro_handle.done()) {
-            }
-            return std::move(*this);
+        shared_state_type require_shared_state() {
+            AVALANCHE_CHECK(m_coro_handle && !m_coro_handle.promise().m_state, "Invalid coroutine context. Check if you require_shared_state() twice.");
+            auto& promise = m_coro_handle.promise();
+            shared_state_type state = avalanche::make_atomic_shared<coroutine_state<T>>(unsafe_release());
+            promise.m_state = state;
+            return state;
         }
 
     protected:
@@ -106,9 +119,76 @@ namespace detail::async {
     };
 
     template <typename T>
+    class coroutine_state : public avalanche::enable_atomic_shared_from_this<coroutine_state<T>> {
+    public:
+        using handle_type = typename coroutine_context<T>::handle_type;
+        using callback_type = typename coroutine_context<T>::callback_type;
+        explicit coroutine_state(handle_type handle)
+            : is_finished(false)
+            , m_handle(handle) {}
+
+        ~coroutine_state() AVALANCHE_NOEXCEPT {
+            if (m_handle) {
+                m_handle.destroy();
+            }
+        }
+
+        coroutine_state(const coroutine_state&) = delete;
+        coroutine_state& operator=(const coroutine_state&) = delete;
+        coroutine_state(coroutine_state&& other) = delete;
+        coroutine_state& operator=(coroutine_state&& other) = delete;
+
+        void then(callback_type callback) {
+            AVALANCHE_CHECK(m_handle, "Trying to perform then operation on an invalid coroutine_state");
+            if (is_finished) {
+                if AVALANCHE_CONSTEXPR (std::is_void_v<T>) {
+                    callback();
+                } else {
+                    auto& promise = m_handle.promise();
+                    T& result_value = promise.result.value();
+                    callback(result_value);
+                }
+            } else {
+                std::lock_guard<std::mutex> lock(m_mutex);
+                m_callbacks.emplace_back(std::move(callback));
+            }
+        }
+
+        void notify_finished() {
+            if (!is_finished.exchange(true, std::memory_order_acq_rel)) {
+                std::lock_guard<std::mutex> lock(m_mutex);
+
+                if AVALANCHE_CONSTEXPR (std::is_void_v<T>) {
+                    while (!m_callbacks.queue_is_empty()) {
+                        callback_type cb = std::move(m_callbacks.queue_pop_front());
+                        cb();
+                    }
+                } else {
+                    auto& promise = m_handle.promise();
+                    T& result_value = promise.result.value();
+                    while (!m_callbacks.queue_is_empty()) {
+                        callback_type cb = std::move(m_callbacks.queue_pop_front());
+                        cb(result_value);
+                    }
+                }
+
+                m_callbacks.clear();
+            }
+        }
+
+    private:
+        std::mutex m_mutex;
+        std::atomic<bool> is_finished;
+        handle_type m_handle;
+        vector_queue<callback_type> m_callbacks;
+    };
+
+    template <typename T>
     class coroutine_context<T>::promise_base {
     public:
         using Outer = coroutine_context;
+        using shared_state = typename Outer::shared_state_type;
+        using weak_shared_state = avalanche::atomic_weak_ptr<coroutine_state<T>>;
 
         constexpr std::suspend_always initial_suspend() AVALANCHE_NOEXCEPT { return {}; }
 
@@ -129,6 +209,11 @@ namespace detail::async {
                         m_executor->push_coroutine(promise.continuation);
                     }
                 }
+
+                // Notify callbacks
+                // if (shared_state ptr = promise.m_state.lock()) {
+                //     ptr->notify_finished();
+                // }
             }
             void await_resume() const AVALANCHE_NOEXCEPT {}
 
@@ -139,10 +224,19 @@ namespace detail::async {
             return { m_executor };
         }
 
+        // TODO: memory pool
+        // static void* operator new(std::size_t size) {
+        //     return ::operator new(size);
+        // }
+        // static void operator delete(void* ptr, std::size_t size) {
+        //     ::operator delete(ptr);
+        // }
+
         untyped_handle_type continuation{};
         std::atomic<bool> ready = false;
         bool inherit_executor = true;
         coroutine_executor_base* m_executor = nullptr;
+        weak_shared_state m_state{};
     };
 
     template <typename T>

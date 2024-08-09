@@ -49,24 +49,46 @@ namespace avalanche::core::execution {
             return top;
         }
 
+        void wait_for_all_jobs(size_type how_long_to_wait_ms) {
+            std::unique_lock<std::mutex> lock(m_mutex);
+            if (how_long_to_wait_ms > 0) {
+                const auto timeout = std::chrono::milliseconds(how_long_to_wait_ms);
+                m_cv_empty_check.wait_for(lock, timeout, [this] {
+                    return m_queue.empty();
+                });
+            } else {
+                m_cv_empty_check.wait(lock, [this] {
+                    return m_queue.empty();
+                });
+            }
+        }
+
         void worker() {
             while (m_is_running) {
                 if (coroutine_handle handle = pop(); handle) {
                     if (!handle.done()) {
                         handle.resume();
                     }
+                    if (m_queue.empty()) {
+                        m_cv_empty_check.notify_all();
+                    }
                 }
             }
         }
 
         std::atomic<bool> m_is_running{true};
-        std::queue<coroutine_handle> m_queue;
-        std::mutex m_mutex;
-        std::condition_variable m_cv;
+        std::queue<coroutine_handle> m_queue{};
+        std::mutex m_mutex{};
+        std::condition_variable m_cv{};
+        std::condition_variable m_cv_empty_check{};
         vector<std::jthread> m_threads;
     };
 
     coroutine_executor_base::~coroutine_executor_base() = default;
+
+    void coroutine_executor_base::wait_for_all_jobs(size_type how_long_to_wait_ms) {}
+
+    void coroutine_executor_base::notify_before_handle_destroy(coroutine_handle handle) {}
 
     void sync_coroutine_executor::push_coroutine(const coroutine_handle handle) {
         if (handle && !handle.done()) {
@@ -96,6 +118,10 @@ namespace avalanche::core::execution {
 
     void threaded_coroutine_executor::push_coroutine(const coroutine_handle handle) {
         m_impl_->push(handle);
+    }
+
+    void threaded_coroutine_executor::wait_for_all_jobs(size_type how_long_to_wait_ms) {
+        m_impl_->wait_for_all_jobs(how_long_to_wait_ms);
     }
 
     threaded_coroutine_executor& threaded_coroutine_executor::get_global_executor() {

@@ -28,7 +28,7 @@ namespace avalanche {
             return this->at(m_queue_cursor++);
         }
 
-        value_type queue_is_empty() const {
+        AVALANCHE_NO_DISCARD bool queue_is_empty() const {
             return m_queue_cursor >= this->size();
         }
 

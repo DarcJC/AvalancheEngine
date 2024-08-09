@@ -7,12 +7,13 @@
 #include "execution/graph.h"
 #include "execution/generator.h"
 #include "execution/sync_coroutine.h"
+#include "execution/async_coroutine.h"
 #include "execution/executor.h"
 #include <iostream>
 #include <sstream>
 #include <format>
 #include <thread>
-#include <execution/async_coroutine.h>
+#include <chrono>
 
 using namespace avalanche::core::execution;
 
@@ -21,7 +22,7 @@ public:
     explicit TestNode(const node_id_type id) : Node(id) {}
 };
 
-async_void foo(int i, const int n = 10) {
+inline async_void foo(int i, const int n = 10) {
     if (i < n) {
         co_await foo(i + 2, n).set_executor(sync_coroutine_executor::get_global_executor());
     }
@@ -31,8 +32,22 @@ async_void foo(int i, const int n = 10) {
     co_return;
 }
 
-async_bool bar() {
+inline async_bool bar() {
     co_return true;
+}
+
+inline async_void noop() {
+    co_return;
+}
+
+inline async_void loop_noop(int count) {
+    std::cout << "loop_synchronously(" << count << ")" << std::endl;
+    auto current_time = std::chrono::high_resolution_clock::now();
+    for (auto i : range<int>(0, count)) {
+        co_await noop();
+    }
+    std::cout << "loop_synchronously(" << count << ") returning" << std::endl;
+    std::cout << (std::chrono::high_resolution_clock::now() - current_time) << std::endl;
 }
 
 int main(int argc, char* argv[]) {
@@ -44,18 +59,25 @@ int main(int argc, char* argv[]) {
 
     vulkan::Context context(settings);
 
-    Graph<TestNode> graph{};
-    avalanche::shared_ptr<TestNode> root = graph.default_root_node();
-    avalanche::shared_ptr<TestNode> u = graph.new_node();
-    avalanche::shared_ptr<TestNode> v = graph.new_node();
-    graph.add_edge(root, u);
-    graph.add_edge(root, v);
-    AVALANCHE_LOGGER.log(avalanche::core::LogLevel::Info, "{}", graph.is_node_exist(u->node_id()));
-    graph.add_edge(u, v);
+    // TODO: Figure out why Graph deconstruction leads to crash in Release Mode
+    // Graph<TestNode> graph{};
+    // avalanche::shared_ptr<TestNode> root = graph.default_root_node();
+    // avalanche::shared_ptr<TestNode> u = graph.new_node();
+    // avalanche::shared_ptr<TestNode> v = graph.new_node();
+    // graph.add_edge(root, u);
+    // graph.add_edge(root, v);
+    // AVALANCHE_LOGGER.log(avalanche::core::LogLevel::Info, "{}", graph.is_node_exist(u->node_id()));
+    // graph.add_edge(u, v);
 
-    foo(5, 10)
-        .set_executor(avalanche::core::execution::sync_coroutine_executor::get_global_executor())
+    // auto data = foo(5, 10)
+    //     .set_executor(sync_coroutine_executor::get_global_executor())
+    //     .launch();
+
+    auto state = loop_noop(1000)
         .launch();
+
+    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+    threaded_coroutine_executor::get_global_executor().wait_for_all_jobs(0);
     // for (int i = 0; i < 10; i++) {
     //     foo(0, 10).launch();
     // }
