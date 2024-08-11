@@ -9,386 +9,239 @@
 
 namespace avalanche {
 
-    template <typename T>
-    class enable_shared_from_this;
-
-    template <typename T>
-    class enable_atomic_shared_from_this;
-
-    template <typename T, AllocatorType Allocator = default_allocator<T>, typename RefCounter = size_t>
-    class shared_ptr_base;
-
-    template <typename T, AllocatorType Allocator = default_allocator<T>, typename RefCounter = size_t>
-    using shared_ptr = shared_ptr_base<T, Allocator, RefCounter>;
-
-    template <typename T, AllocatorType Allocator = default_allocator<T>, typename RefCounter = size_t>
-    class weak_ptr_base;
-
-    template <typename T, AllocatorType Allocator = default_allocator<T>, typename RefCounter = size_t>
-    using weak_ptr = weak_ptr_base<T, Allocator, RefCounter>;
-
-    template <typename, typename RefCounter = size_t>
-    struct control_block {
-        RefCounter shared_count = 1; // Initially one reference when shared_ptr is created
-        RefCounter weak_count = 0;   // No weak pointers initially
-
-        control_block() : shared_count(1), weak_count(0) {}
-    };
-
-    template <typename T, AllocatorType Allocator, typename RefCounter>
-    class shared_ptr_base {
+    template <bool IsAtomic = false>
+    class reference_counter {
     public:
-        using value_type = T;
-        using pointer_type = value_type*;
-        using reference_type = value_type&;
-        using const_pointer_type = const pointer_type;
-        using allocator_type = Allocator;
-        using size_type = size_t;
-        using control_block_type = control_block<T, RefCounter>;
-        static constexpr bool is_atomic_counter = std::is_same_v<RefCounter, std::atomic<size_t>>;
+        using inner_type = size_t;
+        using counter_type = std::conditional_t<IsAtomic, std::atomic<inner_type>, inner_type>;
 
-    private:
-        pointer_type m_ptr = nullptr;
-        control_block_type* m_ctrl_block = nullptr;
-        allocator_type m_allocator{};
+        explicit reference_counter(inner_type default_count = 0) : m_count(default_count) {}
 
-        void release_reference_count() {
-            if (m_ctrl_block) {
-                size_type count;
-                if (is_atomic_counter) {
-                    count = m_ctrl_block->shared_count.fetch_sub(1, std::memory_order_acquire) - 1;
-                } else {
-                    count = --(m_ctrl_block->shared_count);
-                }
-                if (count == 0) {
-                    if (m_ptr) {
-                        m_allocator.destroy(m_ptr);
-                        m_allocator.deallocate(m_ptr, 1);
-                    }
-                    if (is_atomic_counter) {
-                        std::atomic_thread_fence(std::memory_order_acquire);
-                        if (m_ctrl_block->weak_count.load(std::memory_order_relaxed) == 0) {
-                            delete m_ctrl_block;
-                        }
-                    } else {
-                        if (m_ctrl_block->weak_count == 0) {
-                            delete m_ctrl_block;
-                        }
-                    }
-                }
-            }
-        }
-
-        void increase_shared_count() {
-            if (m_ctrl_block) {
-                if (is_atomic_counter) {
-                    m_ctrl_block->shared_count.fetch_add(1, std::memory_order_acq_rel);
-                } else {
-                    ++(m_ctrl_block->shared_count);
-                }
-            }
-        }
-
-        void set_enable_shared_from_this() {
-            if constexpr (std::is_base_of_v<enable_shared_from_this<T>, T> || std::is_base_of_v<enable_atomic_shared_from_this<T>, T>) {
-                m_ptr->weak_this = to_weak_ptr();
-            }
-        }
-
-    public:
-        shared_ptr_base(nullptr_t = nullptr) : m_ptr(nullptr), m_ctrl_block(nullptr) {}
-
-        explicit shared_ptr_base(pointer_type ptr) : m_ptr(ptr), m_ctrl_block(new control_block_type()) {
-            set_enable_shared_from_this();
-        }
-
-        shared_ptr_base(const shared_ptr_base& other) {
-            m_ptr = other.m_ptr;
-            m_ctrl_block = other.m_ctrl_block;
-            if (m_ctrl_block) {
-                increase_shared_count();
-            }
-        }
-
-        shared_ptr_base(shared_ptr_base&& other) AVALANCHE_NOEXCEPT : shared_ptr_base() {
-            swap(*this, other);
-        }
-
-        ~shared_ptr_base() {
-            release_reference_count();
-        }
-
-        shared_ptr_base& operator=(const shared_ptr_base& other) {
-            if (this != &other) {
-                release_reference_count();
-                m_ptr = other.m_ptr;
-                m_ctrl_block = other.m_ctrl_block;
-                if (m_ctrl_block) {
-                    increase_shared_count();
-                }
-                set_enable_shared_from_this();
-            }
-            return *this;
-        }
-
-        shared_ptr_base& operator=(shared_ptr_base&& other) AVALANCHE_NOEXCEPT {
-            if (this != &other) {
-                swap(*this, other);
-            }
-            return *this;
-        }
-
-        friend void swap(shared_ptr_base& lhs, shared_ptr_base& rhs) AVALANCHE_NOEXCEPT {
-            using std::swap;
-            swap(lhs.m_ptr, rhs.m_ptr);
-            swap(lhs.m_ctrl_block, rhs.m_ctrl_block);
-            swap(lhs.m_allocator, rhs.m_allocator);
-        }
-
-        pointer_type get() const {
-            return m_ptr;
-        }
-
-        reference_type operator*() const {
-            AVALANCHE_CHECK(m_ptr, "Trying deref a invalid shared_ptr");
-            return *m_ptr;
-        }
-
-        pointer_type operator->() const {
-            AVALANCHE_CHECK(m_ptr, "Trying visit a nullptr inside shared_ptr");
-            return m_ptr;
-        }
-
-        AVALANCHE_NO_DISCARD size_type use_count() const {
-            if constexpr (std::is_integral_v<RefCounter>) {
-                return m_ctrl_block ? m_ctrl_block->shared_count : 0;
+        /**
+         * @brief Add ref
+         */
+        inner_type increase() {
+            if AVALANCHE_CONSTEXPR (IsAtomic) {
+                return m_count.fetch_add(1, std::memory_order_acquire) + 1;
             } else {
-                return m_ctrl_block ? m_ctrl_block->shared_count.load(std::memory_order_acquire) : 0;
+                return ++m_count;
             }
         }
 
-        operator bool() const AVALANCHE_NOEXCEPT {
-            return use_count() > 0;
-        }
-
-        weak_ptr<value_type, allocator_type, RefCounter> to_weak_ptr() const {
-            return weak_ptr_base(*this);
-        }
-
-        explicit operator weak_ptr<value_type, allocator_type, RefCounter>() const AVALANCHE_NOEXCEPT {
-            return to_weak_ptr();
-        }
-
-    private:
-        shared_ptr_base(pointer_type ptr, control_block_type* ctrl_block) : m_ptr(ptr), m_ctrl_block(ctrl_block) {
-            AVALANCHE_CHECK(ctrl_block, "Invalid control block");
-            increase_shared_count();
-        }
-
-        friend class weak_ptr_base<value_type, allocator_type, RefCounter>;
-    };
-
-    template <typename T, AllocatorType Allocator, typename RefCounter>
-    class weak_ptr_base {
-    public:
-        using value_type = T;
-        using reference_type = value_type&;
-        using pointer_type = value_type*;
-        using allocator_type = Allocator;
-        using reference_counter_type = RefCounter;
-        static constexpr bool is_atomic_counter = std::is_same_v<RefCounter, std::atomic<size_t>>;
-
-    private:
-        pointer_type m_ptr = nullptr;
-        control_block<T, RefCounter>* m_ctrl_block = nullptr;
-
-        void release_weak_ref() {
-            if (m_ctrl_block) {
-                if AVALANCHE_CONSTEXPR (is_atomic_counter) {
-                    auto weak_count = m_ctrl_block->weak_count.fetch_sub(1, std::memory_order_release) - 1;
-
-                    if (weak_count == 0) {
-                        std::atomic_thread_fence(std::memory_order_acquire);
-
-                        if (m_ctrl_block->weak_count.load(std::memory_order_relaxed) == 0) {
-                            delete m_ctrl_block;
-                        }
-                    }
-                } else {
-                     if (--(m_ctrl_block->weak_count) == 0 && (m_ctrl_block->shared_count) == 0) {
-                        delete m_ctrl_block;
-                     }
-                }
-            }
-        }
-
-        void increase_weak_count() {
-            if (m_ctrl_block) {
-                if AVALANCHE_CONSTEXPR (is_atomic_counter) {
-                    m_ctrl_block->weak_count.fetch_add(1, std::memory_order_acq_rel);
-                } else {
-                    ++(m_ctrl_block->weak_count);
-                }
-            }
-        }
-
-    public:
-        weak_ptr_base(nullptr_t = nullptr) : m_ptr(nullptr), m_ctrl_block(nullptr) {}
-
-        explicit weak_ptr_base(const shared_ptr<value_type, allocator_type, reference_counter_type>& shared) : m_ptr(shared.get()), m_ctrl_block(shared.m_ctrl_block) {
-            if (m_ctrl_block) {
-                increase_weak_count();
-            }
-        }
-
-        weak_ptr_base(const weak_ptr_base& other) : m_ptr(other.m_ptr), m_ctrl_block(other.m_ctrl_block) {
-            if (m_ctrl_block) {
-                increase_weak_count();
-            }
-        }
-
-        weak_ptr_base& operator=(const weak_ptr_base<value_type, allocator_type, RefCounter>& other) {
-            if (this != &other) {
-                release_weak_ref();
-                m_ptr = other.m_ptr;
-                m_ctrl_block = other.m_ctrl_block;
-                if (m_ctrl_block) {
-                    increase_weak_count();
-                }
-            }
-            return *this;
-        }
-
-        weak_ptr_base& operator=(const shared_ptr<value_type, allocator_type, RefCounter>& other) {
-            weak_ptr_base(other).swap(*this);
-            return *this;
-        }
-
-        ~weak_ptr_base() {
-            release_weak_ref();
-        }
-
-        shared_ptr<value_type, allocator_type, reference_counter_type> lock() const AVALANCHE_NOEXCEPT {
-            if AVALANCHE_CONSTEXPR (is_atomic_counter) {
-                if (m_ctrl_block) {
-                    auto old_count = m_ctrl_block->shared_count.load(std::memory_order_acquire);
-                    while (old_count != 0) {
-                        if (m_ctrl_block->shared_count.compare_exchange_weak(old_count, old_count + 1, std::memory_order_acquire, std::memory_order_relaxed)) {
-                            return {m_ptr, m_ctrl_block};
-                        }
-                    }
-                }
+        inner_type decrease() {
+            if AVALANCHE_CONSTEXPR (IsAtomic) {
+                return m_count.fetch_sub(1, std::memory_order_release) + 1;
             } else {
-                if (m_ctrl_block && m_ctrl_block->shared_count > 0) {
-                    return {m_ptr, m_ctrl_block};
-                }
+                return --m_count;
             }
-            return nullptr;
         }
 
-        AVALANCHE_NO_DISCARD bool expired() const AVALANCHE_NOEXCEPT {
-            return !m_ctrl_block || m_ctrl_block->shared_count == 0;
+        AVALANCHE_NO_DISCARD inner_type count() const {
+            if AVALANCHE_CONSTEXPR (IsAtomic) {
+                return m_count.load(std::memory_order_acquire);
+            } else {
+                return m_count;
+            }
         }
 
-        AVALANCHE_NO_DISCARD size_t use_count() const AVALANCHE_NOEXCEPT {
-            return m_ctrl_block ? m_ctrl_block->shared_count : 0;
+        AVALANCHE_NO_DISCARD bool is_zero() const {
+            return count() == 0;
         }
-
-        void swap(weak_ptr_base& other) AVALANCHE_NOEXCEPT {
-            using std::swap;
-            swap(m_ptr, other.m_ptr);
-            swap(m_ctrl_block, other.m_ctrl_block);
-        }
-
-        pointer_type operator->() const {
-            AVALANCHE_CHECK(m_ptr, "Trying visit a nullptr inside weak_ptr");
-            AVALANCHE_CHECK(m_ctrl_block && m_ctrl_block->shared_count > 0, "Trying visit a freed instance (RC=0)");
-            return lock().get();
-        }
-
-        reference_type operator*() const {
-            AVALANCHE_CHECK(m_ptr, "Trying deref a invalid weak_ptr");
-            AVALANCHE_CHECK(m_ctrl_block && m_ctrl_block->shared_count > 0, "Trying visit a freed instance (RC=0)");
-            return *lock();
-        }
-
-        operator bool() const AVALANCHE_NOEXCEPT {
-            return !expired();
-        }
-
-    };
-
-    template <typename T>
-    class enable_shared_from_this {
-    protected:
-        enable_shared_from_this() = default;
-        enable_shared_from_this(const enable_shared_from_this&) = default;
-        enable_shared_from_this& operator=(const enable_shared_from_this&) = default;
-
-    public:
-        shared_ptr<T> shared_from_this() {
-            return weak_this.lock();
-        }
-
-        shared_ptr<const T> shared_from_this() const {
-            return weak_this.lock();
-        }
-
-        template <typename U, AllocatorType Allocator, typename RefCounter>
-        friend class shared_ptr_base;
 
     private:
-        mutable weak_ptr<T> weak_this;
+        counter_type m_count;
     };
 
-    template <typename T>
-    class enable_atomic_shared_from_this {
-    protected:
-        enable_atomic_shared_from_this() = default;
-        enable_atomic_shared_from_this(const enable_atomic_shared_from_this&) = default;
-        enable_atomic_shared_from_this& operator=(const enable_atomic_shared_from_this&) = default;
+    namespace detail::shared_ptr {
+        template <bool IsAtomic = false>
+        struct control_block {
+        public:
+            using inner_type = typename reference_counter<IsAtomic>::inner_type;
 
-        using shared_type = shared_ptr<T, default_allocator<T>, std::atomic<size_t>>;
-        using shared_const_type = shared_ptr<const T, default_allocator<T>, std::atomic<size_t>>;
-        using weak_type = weak_ptr<T, default_allocator<T>, std::atomic<size_t>>;
+            control_block() : m_weak(0), m_shared(0) {}
 
-    public:
-        shared_type shared_from_this() {
-            return weak_this.lock();
-        }
+            void increase_shared() {
+                m_shared.increase();
+            }
 
-        shared_const_type shared_from_this() const {
-            return weak_this.lock();
-        }
+            void decrease_shared() {
+                m_shared.decrease();
+            }
 
-        template <typename U, AllocatorType Allocator, typename RefCounter>
-        friend class shared_ptr_base;
+            void increase_weak() {
+                m_weak.increase();
+            }
 
-    private:
-        mutable weak_type weak_this;
-    };
+            void decrease_weak() {
+                m_weak.decrease();
+            }
 
-    template <typename T, typename... Args>
-    shared_ptr<T> make_shared(Args&&... args) {
-        using allocator_type = default_allocator<T>;
-        allocator_type allocator{};
-        T* allocated_memory = allocator.allocate(1, nullptr);
-        allocator.construct(allocated_memory, std::forward<Args>(args)...);
-        return shared_ptr_base<T, default_allocator<T>>(allocated_memory);
+            bool should_object_been_destroy() {
+                return m_shared.is_zero();
+            }
+
+            bool should_control_block_been_destroy() {
+                return m_shared.is_zero() && m_weak.is_zero();
+            }
+
+            reference_counter<IsAtomic> m_weak{};
+            reference_counter<IsAtomic> m_shared{};
+        };
     }
 
-    template <typename T>
-    using atomic_shared_ptr = shared_ptr_base<T, default_allocator<T>, std::atomic<size_t>>;
+    template <typename T, bool IsAtomic = false>
+    class shared_ptr {
+        using control_block_type = detail::shared_ptr::control_block<IsAtomic>;
+        using control_block_pointer = control_block_type*;
+    public:
+        using value_type = T;
+        using value_pointer = value_type*;
+        static constexpr bool is_atomic_rc = IsAtomic;
 
-    template <typename T>
-    using atomic_weak_ptr = weak_ptr_base<T, default_allocator<T>, std::atomic<size_t>>;
+        shared_ptr() : m_value(nullptr), m_control_block(nullptr) {}
+        explicit shared_ptr(std::nullptr_t) : shared_ptr() {}
+        explicit shared_ptr(value_pointer ptr) : shared_ptr(ptr, new control_block_type()) {}
 
-    template <typename T, typename... Args>
-    atomic_shared_ptr<T> make_atomic_shared(Args&&... args) {
-        using allocator_type = default_allocator<T>;
-        allocator_type allocator{};
-        T* allocated_memory = allocator.allocate(1, nullptr);
-        allocator.construct(allocated_memory, std::forward<Args>(args)...);
-        return atomic_shared_ptr<T>(allocated_memory);
+        shared_ptr(const shared_ptr& other) : shared_ptr(other.m_value, other.m_control_block) {}
+        shared_ptr& operator=(const shared_ptr& other) {
+            if (this != &other) {
+                reset();
+                if (other.m_value && other.m_control_block) {
+                    other.m_control_block->increase_shared();
+                }
+                m_value = other.m_value;
+                m_control_block = other.m_control_block;
+            }
+            return *this;
+        }
+
+        shared_ptr(shared_ptr&& other) AVALANCHE_NOEXCEPT : shared_ptr(std::exchange(other.m_value, nullptr), std::exchange(other.m_control_block, nullptr)) {}
+        shared_ptr& operator=(shared_ptr&& other) AVALANCHE_NOEXCEPT {
+            if (this != &other) {
+                shared_ptr temp(other);
+                std::swap(other.m_value, m_value);
+                std::swap(other.m_control_block, m_control_block);
+            }
+            return *this;
+        }
+
+        ~shared_ptr() {
+            reset();
+        }
+
+        void reset() {
+            if (m_control_block) {
+                if (m_control_block->decrease_shared() == 0) {
+                    delete m_value;
+                    m_value = nullptr;
+                    if (m_control_block->m_weak.count() == 0) {
+                        delete m_control_block;
+                        m_control_block = nullptr;
+                    }
+                }
+            }
+        }
+
+        template <typename U = T>
+        requires std::is_convertible_v<U*, T*>
+        shared_ptr<U, is_atomic_rc> clone() const {
+            return shared_ptr<U, is_atomic_rc>(m_value, m_control_block);
+        }
+
+        template <typename U = T>
+        requires std::is_convertible_v<T*, U*>
+        U* get() {
+            return m_value;
+        }
+
+        template <typename U = T>
+        requires std::is_convertible_v<T*, U*>
+        U* get() const {
+            return m_value;
+        }
+
+    private:
+        shared_ptr(value_pointer ptr, control_block_pointer cb) : m_value(ptr), m_control_block(cb) {
+            if (m_value && m_control_block) {
+                m_control_block->increase_shared();
+            }
+        }
+
+        value_pointer m_value = nullptr;
+        control_block_pointer m_control_block = nullptr;
+
+        template <typename, bool>
+        friend class weak_ptr;
+    };
+
+    template <typename T, bool IsAtomic = false>
+    class weak_ptr {
+        using control_block_type = detail::shared_ptr::control_block<IsAtomic>;
+        using control_block_pointer = control_block_type*;
+    public:
+        using value_type = T;
+        using value_pointer = value_type*;
+
+        explicit weak_ptr(const shared_ptr<T, IsAtomic>& other) : weak_ptr(other.m_value, other.m_control_block) {}
+
+        weak_ptr(const weak_ptr& other) : weak_ptr(other.m_value, other.m_control_block) {}
+        weak_ptr& operator=(const weak_ptr& other) {
+            if (&other != this) {
+                reset();
+                if (other.m_value && other.m_control_block) {
+                    other.m_control_block->increase_weak();
+                }
+                m_value = other.m_value;
+                m_control_block = other.m_control_block;
+            }
+            return *this;
+        }
+
+        weak_ptr(weak_ptr&& other) AVALANCHE_NOEXCEPT : weak_ptr(std::exchange(other.m_value, nullptr), std::exchange(other.m_control_block, nullptr)) {}
+        weak_ptr& operator=(weak_ptr&& other) AVALANCHE_NOEXCEPT {
+            if (&other != this) {
+                weak_ptr temp(other);
+                std::swap(other.m_value, m_value);
+                std::swap(other.m_control_block, m_control_block);
+            }
+            return *this;
+        }
+
+        ~weak_ptr() {
+            reset();
+        }
+
+        void reset() {
+            m_value = nullptr;
+            if (m_control_block) {
+                if (m_control_block->decrease_weak() == 0) {
+                    delete m_control_block;
+                    m_control_block = nullptr;
+                }
+            }
+        }
+
+        shared_ptr<T, IsAtomic> lock() {
+            return { m_value, m_control_block };
+        }
+
+    private:
+        weak_ptr(value_pointer ptr, control_block_pointer cb) : m_value(ptr), m_control_block(cb) {
+            if (m_value && m_control_block) {
+                m_control_block->increase_weak();
+            }
+        }
+
+        value_pointer m_value = nullptr;
+        control_block_pointer m_control_block = nullptr;
+
+        template <typename, bool>
+        friend class shared_ptr;
+    };
+
+    template <typename T, bool IsAtomic, typename... Args>
+    shared_ptr<T, IsAtomic> make_shared(Args&&... args) {
+        return { new T(std::forward<Args>(args)...) };
     }
+
 }

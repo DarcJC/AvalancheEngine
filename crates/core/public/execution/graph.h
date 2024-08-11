@@ -16,7 +16,7 @@ namespace avalanche::core::execution {
     };
 
     template <typename T>
-    class Node : public enable_shared_from_this<T> {
+    class Node {
     public:
         using node_id_type = int64_t;
 
