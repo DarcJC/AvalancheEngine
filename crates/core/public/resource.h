@@ -1,5 +1,6 @@
 #pragma once
 
+#include "avalanche_core_export.h"
 #include <cstdint>
 #include <compare>  // for the <=> compare
 #include <atomic>

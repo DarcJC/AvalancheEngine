@@ -9,6 +9,7 @@ set(sources
         "private/execution/graph.cpp"
         "private/execution/executor.cpp"
         "private/execution/coroutine.cpp"
+        "private/server_manager.cpp"
 )
 
 avalanche_target(

@@ -2,3 +2,4 @@
 add_subdirectory(render_device)
 add_subdirectory(render_driver_vulkan)
 add_subdirectory(render_server)
+add_subdirectory(window_server)
