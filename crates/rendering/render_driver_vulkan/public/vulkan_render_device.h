@@ -12,11 +12,13 @@ namespace avalanche::rendering::vulkan {
         explicit RenderDevice(const DeviceSettings& settings);
         ~RenderDevice() override;
 
+        // Begin IRenderDevice interface
         void wait_for_device_idle() override;
+        void enable_display_support() override;
+        // End IRenderDevice interface
 
         static unique_ptr<RenderDevice> create_instance(const DeviceSettings& settings);
     private:
-
         class Impl;
         Impl* m_impl;
     };

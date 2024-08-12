@@ -34,6 +34,7 @@ namespace avalanche::rendering::vulkan {
 
     struct DeviceComparator {
         EGPUPowerPreference power_preference;
+        vk::Instance instance;
         bool required_display;
 
         static inline std::unordered_map<vk::PhysicalDeviceType, uint8_t> type_scores{
@@ -44,14 +45,31 @@ namespace avalanche::rendering::vulkan {
                 {vk::PhysicalDeviceType::eVirtualGpu,    3},
         };
 
+        bool support_display(vk::PhysicalDevice pd) const {
+            const auto props =  pd.getQueueFamilyProperties2();
+            for (int32_t i = 0; i < props.size(); ++i) {
+                if (glfwGetPhysicalDevicePresentationSupport(instance, pd, i)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         bool operator()(const vk::PhysicalDevice &lhs, const vk::PhysicalDevice &rhs) const {
             const vk::PhysicalDeviceProperties p1 = lhs.getProperties();
             const vk::PhysicalDeviceProperties p2 = rhs.getProperties();
 
-            // TODO: check does queue families support display
-
             uint8_t score1 = type_scores[p1.deviceType] * (power_preference == EGPUPowerPreference::LowPower ? -1 : 1);
             uint8_t score2 = type_scores[p2.deviceType] * (power_preference == EGPUPowerPreference::LowPower ? -1 : 1);
+
+            if (required_display) {
+                if (!support_display(lhs)) {
+                    score1 -= 100;
+                }
+                if (!support_display(rhs)) {
+                    score2 -= 100;
+                }
+            }
 
             return score1 > score2;
         }
@@ -60,10 +78,11 @@ namespace avalanche::rendering::vulkan {
     vk::PhysicalDevice Context::pick_physical_device(EGPUPowerPreference preference) const {
         std::vector<vk::PhysicalDevice> devices = m_instance.enumeratePhysicalDevices();
 
-        AVALANCHE_CHECK(!devices.empty(), "Can't find render devices");
+        AVALANCHE_CHECK_RUNTIME(!devices.empty(), "Can't find render devices");
 
         std::sort(devices.begin(), devices.end(), DeviceComparator{
             .power_preference = preference,
+            .instance = m_instance,
             .required_display = m_device_settings.required_features.display,
         });
 
@@ -87,11 +106,8 @@ namespace avalanche::rendering::vulkan {
 
     Context::Context(const DeviceSettings& device_settings)
             : m_device_settings(device_settings) {
-        if (m_device_settings.required_features.display) {
-            AVALANCHE_CHECK(glfwVulkanSupported(), "GLFW said vulkan isn't supported to using display functionality");
-        }
         m_extensions_and_layers = ExtensionAndLayer::create_from_features(m_device_settings.required_features);
-        AVALANCHE_CHECK(m_extensions_and_layers.validate_instance(), "Found invalid instance layer(s) or extension(s)");
+        AVALANCHE_CHECK_RUNTIME(m_extensions_and_layers.validate_instance(), "Found invalid instance layer(s) or extension(s)");
 
         m_instance = create_instance();
 
@@ -101,7 +117,7 @@ namespace avalanche::rendering::vulkan {
         }
 
         m_primary_physical_device = pick_physical_device(m_device_settings.power_preference);
-        AVALANCHE_CHECK(m_extensions_and_layers.validate_device(m_primary_physical_device), "Found invalid device layer(s) or extension(s)");
+        AVALANCHE_CHECK_RUNTIME(m_extensions_and_layers.validate_device(m_primary_physical_device), "Found invalid device layer(s) or extension(s)");
 
         m_available_queue = make_unique<AvailableQueue>(m_primary_physical_device);
 

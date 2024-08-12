@@ -28,6 +28,7 @@ namespace avalanche::rendering {
         virtual ~IRenderDevice();
 
         virtual void wait_for_device_idle() = 0;
+        virtual void enable_display_support() = 0;
     };
 
 }

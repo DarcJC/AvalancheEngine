@@ -1,6 +1,7 @@
 #pragma once
 
 #include "avalanche_core_export.h"
+#include "polyfill.h"
 #include <cstdint>
 #include <coroutine>
 

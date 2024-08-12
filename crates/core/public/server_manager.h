@@ -3,6 +3,7 @@
 
 #include "avalanche_core_export.h"
 #include "logger.h"
+#include "type_helper.h"
 #include <cstdint>
 #include <type_traits>
 #include <concepts>
@@ -69,7 +70,7 @@ namespace avalanche::core {
         using Super::size_type;
         using Self = T;
 
-        static constexpr auto server_id = __COUNTER__;
+        static constexpr size_type server_id = id_of_type<T>();
 
         size_type get_server_id() const override {
             return server_id;

@@ -117,6 +117,7 @@ namespace avalanche::core {
 
 #define AVALANCHE_LOGGER avalanche::core::ILogManager::get()
 #define AVALANCHE_LOG_WITH_SOURCE_LOC(level, ...) AVALANCHE_LOGGER.log(avalanche::core::SourceLoc(__FILE__, __LINE__, AVALANCHE_CURRENT_FUNCTION), level, __VA_ARGS__)
+#define AVALANCHE_CHECK_RUNTIME(expr, ...) do { if (!!(!(expr))) AVALANCHE_UNLIKELY_BRANCH { AVALANCHE_LOG_WITH_SOURCE_LOC(avalanche::core::LogLevel::Critical, __VA_ARGS__); AVALANCHE_TRIGGER_BREAKPOINT(); exit(233); } } while (false);
 #define AVALANCHE_ENSURE(expr, ...) do { if (!!(!(expr))) AVALANCHE_UNLIKELY_BRANCH { AVALANCHE_LOG_WITH_SOURCE_LOC(avalanche::core::LogLevel::Error, __VA_ARGS__); AVALANCHE_TRIGGER_BREAKPOINT(); } } while (false);
-#define AVALANCHE_CHECK(expr, ...) do { if (!!(!(expr))) AVALANCHE_UNLIKELY_BRANCH { AVALANCHE_LOG_WITH_SOURCE_LOC(avalanche::core::LogLevel::Critical, __VA_ARGS__); AVALANCHE_TRIGGER_BREAKPOINT(); exit(233); } } while (false);
+#define AVALANCHE_CHECK(expr, ...) AVALANCHE_CHECK_RUNTIME(expr, __VA_ARGS__)
 #define AVALANCHE_TODO(...) AVALANCHE_ENSURE(false, "🚧 Stepped into codes that working in progress 🚧")

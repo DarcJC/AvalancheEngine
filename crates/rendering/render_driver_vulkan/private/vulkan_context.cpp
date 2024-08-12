@@ -44,7 +44,7 @@ namespace avalanche::rendering::vulkan {
         }
 
         if (features.display) {
-            res.instance_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+            res.device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
             uint32_t count_glfw_extensions;
             const char **extensions = glfwGetRequiredInstanceExtensions(&count_glfw_extensions);
@@ -59,7 +59,7 @@ namespace avalanche::rendering::vulkan {
     bool ExtensionAndLayer::validate_instance() const {
         const vk::DynamicLoader dynamic_loader;
         const auto vkGetInstanceProcAddr = dynamic_loader.getProcAddress<PFN_vkGetInstanceProcAddr>("vkGetInstanceProcAddr");
-        AVALANCHE_CHECK(vkGetInstanceProcAddr, "");
+        AVALANCHE_CHECK_RUNTIME(vkGetInstanceProcAddr, "");
         VULKAN_HPP_DEFAULT_DISPATCHER.init();
 
         const auto available_layers = vk::enumerateInstanceLayerProperties();
