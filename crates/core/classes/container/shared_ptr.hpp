@@ -60,20 +60,20 @@ namespace avalanche {
 
             control_block() : m_weak(0), m_shared(0) {}
 
-            void increase_shared() {
-                m_shared.increase();
+            inner_type increase_shared() {
+                return m_shared.increase();
             }
 
-            void decrease_shared() {
-                m_shared.decrease();
+            inner_type decrease_shared() {
+                return m_shared.decrease();
             }
 
-            void increase_weak() {
-                m_weak.increase();
+            inner_type increase_weak() {
+                return m_weak.increase();
             }
 
-            void decrease_weak() {
-                m_weak.decrease();
+            inner_type decrease_weak() {
+                return m_weak.decrease();
             }
 
             bool should_object_been_destroy() {
@@ -160,6 +160,18 @@ namespace avalanche {
             return m_value;
         }
 
+        AVALANCHE_NO_DISCARD bool is_valid() const {
+            return m_control_block != nullptr && m_value && !m_control_block->should_object_been_destroy();
+        }
+
+        explicit operator bool() const {
+            return is_valid();
+        }
+
+        value_pointer operator->() const {
+            return get();
+        }
+
     private:
         shared_ptr(value_pointer ptr, control_block_pointer cb) : m_value(ptr), m_control_block(cb) {
             if (m_value && m_control_block) {
@@ -239,9 +251,14 @@ namespace avalanche {
         friend class shared_ptr;
     };
 
-    template <typename T, bool IsAtomic, typename... Args>
-    shared_ptr<T, IsAtomic> make_shared(Args&&... args) {
-        return { new T(std::forward<Args>(args)...) };
+    template <typename T, typename... Args>
+    shared_ptr<T> make_shared(Args&&... args) {
+        return shared_ptr<T> { new T(std::forward<Args>(args)...) };
+    }
+
+    template <typename T, typename... Args>
+    shared_ptr<T, true> make_atomic_shared(Args&&... args) {
+        return shared_ptr<T, true>{ new T(std::forward<Args>(args)...) };
     }
 
 }
