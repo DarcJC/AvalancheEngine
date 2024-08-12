@@ -10,6 +10,8 @@
 #include "logger.h"
 #include "render_device.h"
 #include "vulkan_context.h"
+#include "server_manager.h"
+#include "window_server.h"
 
 struct TestNode : avalanche::core::execution::Node<TestNode> {
     explicit TestNode(const node_id_type id) : Node(id) {}
@@ -38,6 +40,9 @@ int main(int argc, char* argv[]) {
         settings.required_features.display = true;
 
         auto render_device = avalanche::unique_ptr<IRenderDevice>(vulkan::RenderDevice::create_instance(settings));
+        auto* window_server = avalanche::core::ServerManager::get().get_server<avalanche::window::IWindowServer>();
+        avalanche::window::IWindow* window = window_server->create_window({});
+
     }
 
     return 0;
