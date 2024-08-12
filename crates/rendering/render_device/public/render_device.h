@@ -1,8 +1,11 @@
 #pragma once
 
+#include "avalanche_render_device_export.h"
 #include "render_enums.h"
 
 namespace avalanche::rendering {
+
+    class IRenderGraph;
 
     struct DeviceFeatures {
         bool ray_tracing = true;
@@ -19,10 +22,12 @@ namespace avalanche::rendering {
         EGPUPowerPreference power_preference = EGPUPowerPreference::HighPerformance;
     };
 
-    class IRenderDevice {
+    class AVALANCHE_RENDER_DEVICE_API IRenderDevice {
     public:
         IRenderDevice();
         virtual ~IRenderDevice();
+
+        virtual void wait_for_device_idle() = 0;
     };
 
 }

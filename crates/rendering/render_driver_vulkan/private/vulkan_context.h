@@ -44,6 +44,10 @@ namespace avalanche::rendering::vulkan
         explicit Context(const DeviceSettings& device_settings);
         ~Context();
 
+        AVALANCHE_NO_DISCARD vk::Instance instance() const;
+        AVALANCHE_NO_DISCARD vk::PhysicalDevice physical_device() const;
+        AVALANCHE_NO_DISCARD vk::Device device() const;
+
     protected:
         DeviceSettings m_device_settings;
         ExtensionAndLayer m_extensions_and_layers;
@@ -62,6 +66,8 @@ namespace avalanche::rendering::vulkan
         AVALANCHE_NO_DISCARD vk::PhysicalDevice pick_physical_device(EGPUPowerPreference preference) const;
         void inject_debug_callback();
         AVALANCHE_NO_DISCARD vk::Device create_device() const;
+
+        friend class RenderDevice;
     };
 }
 

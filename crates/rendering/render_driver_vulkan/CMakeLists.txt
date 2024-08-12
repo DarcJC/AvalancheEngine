@@ -1,8 +1,13 @@
 
+set(AVALANCHE_RENDER_DERIVER_VULKAN_SOURCE
+        "private/vulkan_init.cpp" "private/vulkan_context.cpp" "private/vulkan_debug.cpp"
+        "private/vulkan_render_device.cpp"
+)
+
 avalanche_target(
         NAME render_driver_vulkan
         SHARED_LIBRARY
-        SRCS "private/vulkan_init.cpp" "private/vulkan_context.cpp" "private/vulkan_debug.cpp"
+        SRCS ${AVALANCHE_RENDER_DERIVER_VULKAN_SOURCE}
 )
 
 target_link_libraries(avalanche_render_driver_vulkan PUBLIC avalanche::core)

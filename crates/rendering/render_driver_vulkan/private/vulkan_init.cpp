@@ -118,6 +118,18 @@ namespace avalanche::rendering::vulkan {
         m_available_queue.reset();
     }
 
+    vk::Instance Context::instance() const {
+        return m_instance;
+    }
+
+    vk::PhysicalDevice Context::physical_device() const {
+        return m_primary_physical_device;
+    }
+
+    vk::Device Context::device() const {
+        return m_device;
+    }
+
     void Context::init_vulkan_dispatcher() {
         AVALANCHE_MAYBE_UNUSED static bool val = ([] () {
             VULKAN_HPP_DEFAULT_DISPATCHER.init();
