@@ -66,8 +66,8 @@ namespace avalanche::core::execution {
         void worker() {
             while (m_is_running) {
                 if (coroutine_handle handle = pop(); handle) {
-                    if (!handle.done()) {
-                        handle.resume();
+                    if (!handle->done()) {
+                        handle->resume();
                     }
                     if (m_queue.empty()) {
                         m_cv_empty_check.notify_all();
@@ -91,8 +91,8 @@ namespace avalanche::core::execution {
     void coroutine_executor_base::notify_before_handle_destroy(coroutine_handle handle) {}
 
     void sync_coroutine_executor::push_coroutine(const coroutine_handle handle) {
-        if (handle && !handle.done()) {
-            handle.resume();
+        if (handle && !handle->done()) {
+            handle->resume();
         }
     }
 
