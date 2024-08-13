@@ -85,9 +85,11 @@ namespace detail::async {
          *
          * Suspend at
          *
+         * @code
          * coroutine<void> foo() {
          *     co_return;        ^ suspended here
          * }
+         * @endcode
          *
          * The function body isn't executed yet.
          */
@@ -98,11 +100,13 @@ namespace detail::async {
         /**
          * @brief Coroutine has finished, and we suspend at
          *
+         * @code
          * coroutine<void> foo() {
          *     co_return;
          * }
          * ^
          * suspended here
+         * @endcode
          *
          * to resume the continuation if existed.
          */
@@ -113,6 +117,7 @@ namespace detail::async {
         /**
          * @brief The caller coroutine.
          *
+         * @code
          * coroutine<void> bar() {
          *     co_await foo();
          *     ^ This will invoke
@@ -120,6 +125,7 @@ namespace detail::async {
          *       or(and)
          *       `foo().operator co_await((bar's handle))`
          * }
+         * @endcode
          *
          * The `(bar's coroutine)` was returned to caller first as the result of expression `bar()`.
          *
