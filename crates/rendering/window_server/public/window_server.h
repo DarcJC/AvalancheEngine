@@ -1,10 +1,10 @@
 #pragma once
 
-#include "avalanche_window_server_export.h"
-#include "container/string.hpp"
 #include <cstdint>
 #include "GLFW/glfw3.h"
-#include "server_manager.h"
+#include "avalanche_window_server_export.h"
+#include "container/string.hpp"
+#include "manager/server_manager.h"
 
 
 namespace avalanche::window {
