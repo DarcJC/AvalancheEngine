@@ -58,6 +58,10 @@ namespace detail::async {
             return m_state.template get<state_type>();
         }
 
+        shared_ptr<state_type, true> get_state() {
+            return m_state;
+        }
+
         awaiter_type operator co_await() AVALANCHE_NOEXCEPT {
             return awaiter_type{m_state};
         }
@@ -287,5 +291,10 @@ namespace detail::async {
 
     template <typename T>
     using async = detail::async::coroutine<T>;
+
+    template <typename T>
+    void launch(T&& in) {
+        in->submit_to_executor(in.get_state().template clone<promise_state_base>());
+    }
 
 }

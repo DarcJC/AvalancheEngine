@@ -21,11 +21,17 @@ struct TestNode : avalanche::core::execution::Node<TestNode> {
 
 using namespace avalanche::core::execution;
 
-async<void> foo() {
+inline async<void> foo() {
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    AVALANCHE_LOGGER.info("foo()");
     co_return;
 }
 
 int main(int argc, char* argv[]) {
+    {
+        launch(foo());
+    }
+
     {
         using namespace avalanche::core::execution;
 
@@ -48,8 +54,10 @@ int main(int argc, char* argv[]) {
         auto render_device = avalanche::unique_ptr<IRenderDevice>(vulkan::RenderDevice::create_instance(settings));
         auto* window_server = avalanche::core::ServerManager::get().get_server<avalanche::window::IWindowServer>();
         avalanche::window::IWindow* window = window_server->create_window({});
-
     }
+
+    // Waiting for coroutine running
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
     return 0;
 }

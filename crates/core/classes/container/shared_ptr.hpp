@@ -184,6 +184,9 @@ namespace avalanche {
 
         template <typename, bool>
         friend class weak_ptr;
+
+        template <typename, bool>
+        friend class shared_ptr;
     };
 
     template <typename T, bool IsAtomic = false>
