@@ -17,7 +17,11 @@ namespace avalanche::rendering::vulkan {
         return window;
     }
 
-    void VulkanWindowServer::destroy_window(window::IWindow *window) {}
+    void VulkanWindowServer::destroy_window(window::IWindow* window) {
+        if (m_windows.contains(static_cast<VulkanWindow*>(window))) {
+            m_windows.remove(static_cast<VulkanWindow*>(window));
+        }
+    }
 
     void VulkanWindowServer::initialize() {
         // Other step for vulkan API has finished in context initialization
@@ -30,6 +34,9 @@ namespace avalanche::rendering::vulkan {
 
     VulkanWindow::VulkanWindow(const window::WindowSettings &settings)
         : window::IWindow(glfwCreateWindow(settings.width, settings.height, settings.title.data(), settings.fullscreen ? glfwGetPrimaryMonitor() : nullptr, nullptr))
-    {
+    {}
+
+    VulkanWindow::~VulkanWindow() {
+        glfwDestroyWindow(m_window);
     }
 } // namespace avalanche::rendering::vulkan

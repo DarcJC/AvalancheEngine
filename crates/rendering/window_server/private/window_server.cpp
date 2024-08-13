@@ -5,11 +5,11 @@ namespace avalanche::window {
     IWindow::~IWindow() = default;
 
     void IWindowServer::on_startup() {
-        static std::once_flag once{};
-        std::call_once(once, [this]() {
-            AVALANCHE_CHECK(glfwInit() == GLFW_TRUE, "GLFW initialization failed");
-            this->initialize();
-        });
+        AVALANCHE_CHECK(glfwInit() == GLFW_TRUE, "GLFW initialization failed");
+        this->initialize();
+    }
+    void IWindowServer::on_shutdown() {
+        glfwTerminate();
     }
 
     IWindow::IWindow(GLFWwindow *window)

@@ -38,6 +38,7 @@ namespace avalanche::window {
         virtual void initialize() = 0;
 
         void on_startup() override;
+        void on_shutdown() override;
     };
 
 }

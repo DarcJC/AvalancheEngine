@@ -57,7 +57,7 @@ namespace avalanche::core {
 
         virtual ~IServer();
 
-        virtual size_type get_server_id() const = 0;
+        AVALANCHE_NO_DISCARD virtual size_type get_server_id() const = 0;
 
         virtual void on_startup();
         virtual void on_shutdown();
@@ -72,7 +72,7 @@ namespace avalanche::core {
 
         static constexpr size_type server_id = id_of_type<T>();
 
-        size_type get_server_id() const override {
+        AVALANCHE_NO_DISCARD size_type get_server_id() const override {
             return server_id;
         }
 

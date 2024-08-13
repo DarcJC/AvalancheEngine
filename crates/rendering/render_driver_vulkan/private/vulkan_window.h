@@ -29,6 +29,7 @@ namespace avalanche::rendering::vulkan {
     class VulkanWindow : public window::IWindow {
     public:
         explicit VulkanWindow(const window::WindowSettings& settings);
+        ~VulkanWindow() override;
 
     private:
         friend class VulkanWindowServer;

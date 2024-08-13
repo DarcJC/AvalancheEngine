@@ -13,6 +13,9 @@ namespace avalanche::core {
         using Super::size_type;
 
         RealServerManager() = default;
+        ~RealServerManager() override {
+            unregister_all_servers();
+        }
 
         void register_server(IServer* server) override {
             AVALANCHE_CHECK(nullptr != server, "Trying to register invalid server");
@@ -37,6 +40,15 @@ namespace avalanche::core {
                 return m_servers[id];
             }
             return nullptr;
+        }
+
+        void unregister_all_servers() {
+            for (auto& [id, srv] : m_servers) {
+                AVALANCHE_LOGGER.info("Shutting down server {}", id);
+                srv->on_shutdown();
+                delete srv;
+            }
+            m_servers.clear();
         }
 
     private:
