@@ -23,6 +23,17 @@ namespace avalanche::window {
         explicit IWindow(GLFWwindow* window);
         virtual ~IWindow();
 
+        virtual void maximize();
+        virtual void minimize();
+        /**
+         * @brief Recovery from the maximize or minimize operation
+         */
+        virtual void restore();
+
+        virtual void hide();
+
+        virtual void show();
+
     protected:
         GLFWwindow* m_window;
     };
@@ -36,6 +47,7 @@ namespace avalanche::window {
         virtual IWindow* create_window(const WindowSettings& settings) = 0;
         virtual void destroy_window(IWindow* window) = 0;
         virtual void initialize() = 0;
+        virtual void deinitialize() = 0;
 
         void on_startup() override;
         void on_shutdown() override;

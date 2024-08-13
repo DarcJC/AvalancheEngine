@@ -16,6 +16,7 @@ namespace avalanche::rendering::vulkan {
         window::IWindow* create_window(const window::WindowSettings& settings) override;
         void destroy_window(window::IWindow* window) override;
         void initialize() override;
+        void deinitialize() override;
 
     private:
         explicit VulkanWindowServer(RenderDevice& render_device);

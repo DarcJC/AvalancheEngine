@@ -52,7 +52,7 @@ int main(int argc, char* argv[]) {
         settings.required_features.display = true;
 
         auto render_device = avalanche::unique_ptr<IRenderDevice>(vulkan::RenderDevice::create_instance(settings));
-        auto* window_server = avalanche::core::ServerManager::get().get_server<avalanche::window::IWindowServer>();
+        auto* window_server = avalanche::core::ServerManager::get().get_server_checked<avalanche::window::IWindowServer>();
         avalanche::window::IWindow* window = window_server->create_window({});
     }
 

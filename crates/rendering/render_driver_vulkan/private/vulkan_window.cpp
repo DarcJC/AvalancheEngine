@@ -32,6 +32,13 @@ namespace avalanche::rendering::vulkan {
         : m_render_device(&render_device)
     {}
 
+    void VulkanWindowServer::deinitialize() {
+        for (auto* window : m_windows) {
+            delete window;
+        }
+        m_windows.clear();
+    }
+
     VulkanWindow::VulkanWindow(const window::WindowSettings &settings)
         : window::IWindow(glfwCreateWindow(settings.width, settings.height, settings.title.data(), settings.fullscreen ? glfwGetPrimaryMonitor() : nullptr, nullptr))
     {}

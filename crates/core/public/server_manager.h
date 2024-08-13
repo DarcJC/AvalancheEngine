@@ -36,6 +36,15 @@ namespace avalanche::core {
         }
 
         template <class SubServer>
+        requires sub_server<SubServer>
+        SubServer* get_server_checked() {
+            constexpr size_type id = SubServer::server_id;
+            auto* result = static_cast<SubServer*>(get_server(id));
+            AVALANCHE_CHECK_RUNTIME(result != nullptr, "Could not found server with id {}", id);
+            return result;
+        }
+
+        template <class SubServer>
         requires sub_server<SubServer> && std::is_default_constructible_v<SubServer>
         SubServer* create_and_register_server() {
             AVALANCHE_CHECK(get_server(SubServer::server_id) == nullptr, "Server already exists");
