@@ -14,16 +14,18 @@ namespace avalanche::core::execution {
 
         AVALANCHE_CORE_INTERNAL virtual std::coroutine_handle<> get_erased_handle() = 0;
 
-        AVALANCHE_CORE_INTERNAL virtual void set_ready() = 0;
+        AVALANCHE_CORE_INTERNAL virtual bool set_ready() = 0;
 
         AVALANCHE_CORE_INTERNAL virtual bool done() = 0;
 
         AVALANCHE_CORE_INTERNAL virtual void resume() = 0;
+
+        AVALANCHE_CORE_INTERNAL AVALANCHE_NO_DISCARD virtual bool is_ready() = 0;
     };
 
     class AVALANCHE_CORE_API coroutine_executor_base {
     public:
-        using coroutine_handle = shared_ptr<promise_state_base>;
+        using coroutine_handle = shared_ptr<promise_state_base, true>;
         using size_type = size_t;
 
         virtual ~coroutine_executor_base();
@@ -35,7 +37,7 @@ namespace avalanche::core::execution {
 
     class AVALANCHE_CORE_API sync_coroutine_executor : public coroutine_executor_base {
     public:
-        using coroutine_handle = shared_ptr<promise_state_base>;
+        using coroutine_handle = shared_ptr<promise_state_base, true>;
 
         void push_coroutine(coroutine_handle handle) override;
 
@@ -44,7 +46,7 @@ namespace avalanche::core::execution {
 
     class AVALANCHE_CORE_API threaded_coroutine_executor : public coroutine_executor_base {
     public:
-        using coroutine_handle = shared_ptr<promise_state_base>;
+        using coroutine_handle = shared_ptr<promise_state_base, true>;
         using coroutine_executor_base::size_type;
         static constexpr size_type default_thread_group_size = 4;
 

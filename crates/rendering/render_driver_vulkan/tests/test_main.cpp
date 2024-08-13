@@ -3,14 +3,14 @@
 //
 #include <vulkan_render_device.h>
 
-
+#include "execution/async_coroutine.h"
 #include "container/shared_ptr.hpp"
 #include "container/unique_ptr.hpp"
 #include "execution/graph.h"
 #include "logger.h"
 #include "render_device.h"
-#include "vulkan_context.h"
 #include "server_manager.h"
+#include "vulkan_context.h"
 #include "window_server.h"
 
 struct TestNode : avalanche::core::execution::Node<TestNode> {
@@ -18,6 +18,12 @@ struct TestNode : avalanche::core::execution::Node<TestNode> {
 
     int usage = 0;
 };
+
+using namespace avalanche::core::execution;
+
+async<void> foo() {
+    co_return;
+}
 
 int main(int argc, char* argv[]) {
     {

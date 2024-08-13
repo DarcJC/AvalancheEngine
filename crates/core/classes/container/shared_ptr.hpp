@@ -143,7 +143,7 @@ namespace avalanche {
         }
 
         template <typename U = T>
-        requires std::is_convertible_v<U*, T*>
+        requires std::is_base_of_v<U, T>
         shared_ptr<U, is_atomic_rc> clone() const {
             return shared_ptr<U, is_atomic_rc>(m_value, m_control_block);
         }

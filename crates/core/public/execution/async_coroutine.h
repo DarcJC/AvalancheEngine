@@ -19,154 +19,273 @@ namespace avalanche::core::execution {
 
 namespace detail::async {
 
-    template <typename Ret>
-    class promise;
+    template<typename Ret>
+    class coroutine_state;
 
+    /////////////////////////
     template <typename Ret>
-    class coroutine : public std::coroutine_handle<promise<Ret>>, public promise_state_base {
+    class coroutine {
     public:
-        using promise_type = promise<Ret>;
-        using coroutine_handle_type = std::coroutine_handle<promise<Ret>>;
+        struct promise_base;
+        struct promise_type;
+        struct awaiter_type;
+        struct final_awaiter;
+        using handle_type = std::coroutine_handle<promise_type>;
+        using state_type = coroutine_state<Ret>;
 
-        explicit coroutine(coroutine_handle_type handle)
-            : std::coroutine_handle<promise<Ret>>(handle)
-            , m_executor(threaded_coroutine_executor::get_global_executor())
+        explicit coroutine(handle_type coroutine_handle)
+            : m_state(make_atomic_shared<state_type>(coroutine_handle))
         {}
-        ~coroutine() override {
-            this->destroy();
-        }
 
-        std::coroutine_handle<> get_erased_handle() override {
+        coroutine(const coroutine& other) : m_state(other.m_state) {}
+        coroutine& operator=(const coroutine& other) {
+            if (this != &other) {
+                m_state = other.m_state;
+            }
             return *this;
         }
 
-        void set_ready() override {
-            m_is_ready.store(true, std::memory_order_release);
+        coroutine(coroutine&& other) AVALANCHE_NOEXCEPT : m_state(std::move(other.m_state)) {}
+        coroutine& operator=(coroutine&& other) AVALANCHE_NOEXCEPT {
+            if (this != &other) {
+                AVALANCHE_MAYBE_UNUSED coroutine temporary(other);
+                std::swap(m_state, other.m_state);
+            }
+            return *this;
         }
 
-        bool done() override {
-            return m_is_ready.load(std::memory_order_acquire);
+        state_type* operator->() {
+            return m_state.template get<state_type>();
         }
 
-        void resume() override {
-            coroutine_handle_type::resume();
-        }
-
-        struct awaiter_context;
-
-        awaiter_context operator co_await() && AVALANCHE_NOEXCEPT {
-            return awaiter_context{ *this };
+        awaiter_type operator co_await() AVALANCHE_NOEXCEPT {
+            return awaiter_type{m_state};
         }
 
     private:
-        coroutine_executor_base& m_executor;
-        std::atomic<bool> m_is_ready;
+        shared_ptr<state_type, true> m_state;
     };
 
     template <typename Ret>
-    class promise_base {
-    public:
-        using state_type = coroutine<Ret>;
-        using handle_type = state_type::coroutine_handle_type;
-
-        shared_ptr<state_type> get_return_object() {
-            m_state_object = make_shared<state_type>(state_type::from_promise(*this));
-            return m_state_object;
-        }
+    struct coroutine<Ret>::promise_base {
 
         /**
-         * Suspending here to return the decltype(get_return_object()) to caller.
-         * e.g.
-         *
-         * ```
-         * promise_state<void> foo() { co_return; }
-         *
-         * shared_ptr<state_type> promise = foo();
-         * ```
+         * @brief We won't handle the exception inside the coroutine.
          */
-        static std::suspend_always initial_suspend() AVALANCHE_NOEXCEPT { return {}; }
-
-        /**
-         * We don't allow exception in coroutine for now.
-         * It is a trivial job to ensure safety after an exception occurred.
-         */
-        void unhandled_exception() {
+        static void unhandled_exception() {
             throw;
         }
 
-        void set_next(state_type::coroutine_handle_type handle) {
-            m_continuation = handle;
+        /**
+         * @brief Always suspending and return coroutine<Ret> to invoker.
+         *
+         * Suspend at
+         *
+         * coroutine<void> foo() {
+         *     co_return;        ^ suspended here
+         * }
+         *
+         * The function body isn't executed yet.
+         */
+        static constexpr std::suspend_always initial_suspend() AVALANCHE_NOEXCEPT {
+            return std::suspend_always{};
         }
 
-        shared_ptr<state_type> get_state() {
-            return m_state_object;
+        /**
+         * @brief Coroutine has finished, and we suspend at
+         *
+         * coroutine<void> foo() {
+         *     co_return;
+         * }
+         * ^
+         * suspended here
+         *
+         * to resume the continuation if existed.
+         */
+        final_awaiter final_suspend() AVALANCHE_NOEXCEPT {
+            return final_awaiter { coroutine_state_value };
         }
 
-        struct final_awaiter {
-            bool await_ready() const AVALANCHE_NOEXCEPT { return false; }
-            decltype(auto) await_suspend(handle_type handle) {
-                auto& promise = handle.promise();
+        /**
+         * @brief The caller coroutine.
+         *
+         * coroutine<void> bar() {
+         *     co_await foo();
+         *     ^ This will invoke
+         *       `(bar's promise).await_transform(foo())`
+         *       or(and)
+         *       `foo().operator co_await((bar's handle))`
+         * }
+         *
+         * The `(bar's coroutine)` was returned to caller first as the result of expression `bar()`.
+         *
+         * We save `(bar's coroutine)` as the continuation of `foo()` so we can resume `bar()` after `foo()` completed.
+         *
+         */
+        std::coroutine_handle<> continuation = nullptr;
 
-                if (promise.m_continuation) {
-                    auto state = promise.m_continuation.promise().get_state();
-                    state->m_executor.push_coroutine(promise.get_state());
-                }
-
-                return true;
-            }
-        };
-
-    private:
-        state_type::coroutine_handle_type m_continuation = nullptr;
-        shared_ptr<state_type> m_state_object;
-
-        friend class coroutine<Ret>;
+        /**
+         * @brief We use a shared state to allow tracking coroutine that moving across threads.
+         */
+        shared_ptr<state_type, true> coroutine_state_value;
     };
 
     template <typename Ret>
-    class promise : public promise_base<Ret> {
-    public:
-        void return_value(Ret&& value) {
-            m_result = std::move(value);
+    struct coroutine<Ret>::promise_type : coroutine<Ret>::promise_base {
+        coroutine<Ret> get_return_object() AVALANCHE_NOEXCEPT {
+            coroutine res { handle_type::from_promise(*this) };
+            this->coroutine_state_value = res.m_state;
+            return res;
         }
 
-        optional<Ret> m_result;
+        void return_value(Ret&& value) {
+            this->coroutine_state_value.set_result(std::move(value));
+        }
     };
 
     template <>
-    class promise<void> : public promise_base<void> {
-    public:
-        void return_void() {}
+    struct coroutine<void>::promise_type : coroutine<void>::promise_base {
+        coroutine<void> get_return_object() AVALANCHE_NOEXCEPT {
+            coroutine res{ handle_type::from_promise(*this) };
+            this->coroutine_state_value = res.m_state;
+            return res;
+        }
+
+        static void return_void() {}
     };
 
     template <typename Ret>
-    struct coroutine<Ret>::awaiter_context {
-        coroutine<Ret>& current_coroutine_context;
+    struct coroutine<Ret>::awaiter_type {
+        shared_ptr<state_type, true> awaiting_coroutine_state;
 
         /**
-         * Always goto await_suspend
+         * @brief Always returning false to step into `await_suspend()`
          */
-        bool await_ready() AVALANCHE_NOEXCEPT {
+        AVALANCHE_CONSTEXPR static bool await_ready() AVALANCHE_NOEXCEPT {
             return false;
         }
 
-        decltype(auto) await_suspend(coroutine_handle_type parent_coroutine_handle) {
-            // Setup continuation chain
-            current_coroutine_context.promise().set_next(parent_coroutine_handle);
+        /**
+         * @brief
+         * @param parent_handle The handle of coroutine awaiting current `awaiter`
+         * @return true to suspend handle, false to resume handle
+         */
+        decltype(auto) await_suspend(std::coroutine_handle<> parent_handle) AVALANCHE_NOEXCEPT {
+            handle_type awaiting_handle = awaiting_coroutine_state->get_handle();
+            auto& promise = awaiting_handle.promise();
+            promise.continuation = parent_handle;  // Set awaiting coroutine's continuation to parent scope handle
 
-            // Submit to queue
-            current_coroutine_context.m_executor.push_coroutine(current_coroutine_context.promise().get_state());
+            awaiting_coroutine_state->submit_to_executor(awaiting_coroutine_state);
 
-            return !current_coroutine_context.done();
+            return !awaiting_coroutine_state->is_ready();
         }
 
-        decltype(auto) await_resume() noexcept {
-            if AVALANCHE_CONSTEXPR (!std::is_void_v<Ret>) {
-                return current_coroutine_context.promise().m_result.value();
-            }
+        decltype(auto) await_resume() AVALANCHE_NOEXCEPT {
+            return awaiting_coroutine_state->get_result();
         }
     };
 
+    template <typename Ret>
+    struct coroutine<Ret>::final_awaiter {
+        shared_ptr<state_type, true> awaiting_coroutine_state;
+
+        AVALANCHE_CONSTEXPR static bool await_ready() AVALANCHE_NOEXCEPT {
+            return false;
+        }
+
+        decltype(auto) await_suspend(std::coroutine_handle<> current_handle) AVALANCHE_NOEXCEPT {
+            handle_type awaiting_handle = awaiting_coroutine_state->get_handle();
+            auto& promise = awaiting_handle.promise();
+
+            if (awaiting_coroutine_state->set_ready()) {
+                if (promise.continuation) {
+                    promise.continuation.resume();
+                }
+            }
+        }
+
+        void await_resume() AVALANCHE_NOEXCEPT {}
+    };
+    /////////////////////////
+
+    /////////////////////////
+
+    template <typename T>
+    struct bool_if_void_else_type {
+        using type = T;
+        using ret = const T&;
+    };
+
+    template <>
+    struct bool_if_void_else_type<void> {
+        using type = bool;
+        using ret = bool;
+    };
+
+    template <typename Ret>
+    class coroutine_state : public promise_state_base {
+    public:
+        using promise_type = typename coroutine<Ret>::promise_type;
+        using handle_type = std::coroutine_handle<promise_type>;
+
+        explicit coroutine_state(handle_type handle)
+            : m_handle(handle)
+            , m_is_ready(false)
+            , m_executor(threaded_coroutine_executor::get_global_executor())
+        {}
+
+        ~coroutine_state() override {
+            if (m_handle) {
+                m_handle.destroy();
+            }
+        }
+
+        handle_type get_handle() {
+            return m_handle;
+        }
+
+        std::coroutine_handle<> get_erased_handle() override {
+            return m_handle;
+        }
+
+        bool set_ready() override {
+            return m_is_ready.exchange(true, std::memory_order_acq_rel);
+        }
+
+        bool done() override {
+            return m_handle.done();
+        }
+
+        void resume() override {
+            m_handle.resume();
+        }
+
+        bool is_ready() override {
+            return m_is_ready.load(std::memory_order_acquire);
+        }
+
+        void set_result(typename bool_if_void_else_type<Ret>::type &&result) { m_coroutine_result = std::move(result); }
+
+        typename bool_if_void_else_type<Ret>::ret get_result() {
+            return m_coroutine_result.value();
+        }
+
+        void submit_to_executor(shared_ptr<promise_state_base, true> task) const AVALANCHE_NOEXCEPT {
+            m_executor.push_coroutine(std::move(task));
+        }
+
+    private:
+        handle_type m_handle;
+        std::atomic<bool> m_is_ready;
+        optional<typename bool_if_void_else_type<Ret>::type> m_coroutine_result{};
+        coroutine_executor_base& m_executor;
+    };
+    /////////////////////////
+
+
 }
+
+    template <typename T>
+    using async = detail::async::coroutine<T>;
 
 }
