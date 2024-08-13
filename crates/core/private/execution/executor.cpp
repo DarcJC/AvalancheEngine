@@ -31,10 +31,10 @@ namespace avalanche::core::execution {
             m_threads.clear();
         }
 
-        void push(const coroutine_handle handle) {
+        void push(coroutine_handle handle) {
             {
                 std::lock_guard<std::mutex> lock(m_mutex);
-                m_queue.push(handle);
+                m_queue.push(std::move(handle));
             }
             m_cv.notify_one();
         }
@@ -116,8 +116,8 @@ namespace avalanche::core::execution {
         m_impl_->terminate();
     }
 
-    void threaded_coroutine_executor::push_coroutine(const coroutine_handle handle) {
-        m_impl_->push(handle);
+    void threaded_coroutine_executor::push_coroutine(coroutine_handle handle) {
+        m_impl_->push(std::move(handle));
     }
 
     void threaded_coroutine_executor::wait_for_all_jobs(size_type how_long_to_wait_ms) {

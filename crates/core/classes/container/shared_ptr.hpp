@@ -22,7 +22,7 @@ namespace avalanche {
          */
         inner_type increase() {
             if AVALANCHE_CONSTEXPR (IsAtomic) {
-                return m_count.fetch_add(1, std::memory_order_acquire) + 1;
+                return m_count.fetch_add(1, std::memory_order_acquire);
             } else {
                 return ++m_count;
             }
@@ -30,7 +30,7 @@ namespace avalanche {
 
         inner_type decrease() {
             if AVALANCHE_CONSTEXPR (IsAtomic) {
-                return m_count.fetch_sub(1, std::memory_order_release) + 1;
+                return m_count.fetch_sub(1, std::memory_order_release);
             } else {
                 return --m_count;
             }
@@ -115,12 +115,12 @@ namespace avalanche {
             return *this;
         }
 
-        shared_ptr(shared_ptr&& other) AVALANCHE_NOEXCEPT : shared_ptr(std::exchange(other.m_value, nullptr), std::exchange(other.m_control_block, nullptr)) {}
+        shared_ptr(shared_ptr&& other) AVALANCHE_NOEXCEPT : m_value(std::exchange(other.m_value, nullptr)), m_control_block(std::exchange(other.m_control_block, nullptr)) {}
         shared_ptr& operator=(shared_ptr&& other) AVALANCHE_NOEXCEPT {
             if (this != &other) {
-                shared_ptr temp(other);
-                std::swap(other.m_value, m_value);
-                std::swap(other.m_control_block, m_control_block);
+                shared_ptr temp(std::move(other));
+                std::swap(temp.m_value, m_value);
+                std::swap(temp.m_control_block, m_control_block);
             }
             return *this;
         }
@@ -131,7 +131,7 @@ namespace avalanche {
 
         void reset() {
             if (m_control_block) {
-                if (m_control_block->decrease_shared() == 0) {
+                if (m_control_block->decrease_shared() <= 1) {
                     delete m_value;
                     m_value = nullptr;
                     if (m_control_block->m_weak.count() == 0) {
@@ -197,6 +197,7 @@ namespace avalanche {
         using value_type = T;
         using value_pointer = value_type*;
 
+        weak_ptr() : weak_ptr(nullptr, nullptr) {}
         explicit weak_ptr(const shared_ptr<T, IsAtomic>& other) : weak_ptr(other.m_value, other.m_control_block) {}
 
         weak_ptr(const weak_ptr& other) : weak_ptr(other.m_value, other.m_control_block) {}
@@ -229,7 +230,7 @@ namespace avalanche {
         void reset() {
             m_value = nullptr;
             if (m_control_block) {
-                if (m_control_block->decrease_weak() == 0) {
+                if (m_control_block->decrease_weak() == 1) {
                     delete m_control_block;
                     m_control_block = nullptr;
                 }

@@ -131,19 +131,19 @@ namespace detail::async {
         /**
          * @brief We use a shared state to allow tracking coroutine that moving across threads.
          */
-        shared_ptr<state_type, true> coroutine_state_value;
+        weak_ptr<state_type, true> coroutine_state_value;
     };
 
     template <typename Ret>
     struct coroutine<Ret>::promise_type : coroutine<Ret>::promise_base {
         coroutine<Ret> get_return_object() AVALANCHE_NOEXCEPT {
             coroutine res { handle_type::from_promise(*this) };
-            this->coroutine_state_value = res.m_state;
+            this->coroutine_state_value = weak_ptr{res.m_state};
             return res;
         }
 
         void return_value(Ret&& value) {
-            this->coroutine_state_value.set_result(std::move(value));
+            this->coroutine_state_value.lock().set_result(std::move(value));
         }
     };
 
@@ -151,7 +151,7 @@ namespace detail::async {
     struct coroutine<void>::promise_type : coroutine<void>::promise_base {
         coroutine<void> get_return_object() AVALANCHE_NOEXCEPT {
             coroutine res{ handle_type::from_promise(*this) };
-            this->coroutine_state_value = res.m_state;
+            this->coroutine_state_value = weak_ptr{res.m_state};
             return res;
         }
 
@@ -160,7 +160,7 @@ namespace detail::async {
 
     template <typename Ret>
     struct coroutine<Ret>::awaiter_type {
-        shared_ptr<state_type, true> awaiting_coroutine_state;
+        weak_ptr<state_type, true> awaiting_coroutine_state;
 
         /**
          * @brief Always returning false to step into `await_suspend()`
@@ -175,13 +175,14 @@ namespace detail::async {
          * @return true to suspend handle, false to resume handle
          */
         decltype(auto) await_suspend(std::coroutine_handle<> parent_handle) AVALANCHE_NOEXCEPT {
-            handle_type awaiting_handle = awaiting_coroutine_state->get_handle();
+            auto state = awaiting_coroutine_state.lock();
+            handle_type awaiting_handle = state->get_handle();
             auto& promise = awaiting_handle.promise();
             promise.continuation = parent_handle;  // Set awaiting coroutine's continuation to parent scope handle
 
-            awaiting_coroutine_state->submit_to_executor(awaiting_coroutine_state);
+            state->submit_to_executor(state);
 
-            return !awaiting_coroutine_state->is_ready();
+            return !state->is_ready();
         }
 
         decltype(auto) await_resume() AVALANCHE_NOEXCEPT {
@@ -191,17 +192,18 @@ namespace detail::async {
 
     template <typename Ret>
     struct coroutine<Ret>::final_awaiter {
-        shared_ptr<state_type, true> awaiting_coroutine_state;
+        weak_ptr<state_type, true> awaiting_coroutine_state;
 
         AVALANCHE_CONSTEXPR static bool await_ready() AVALANCHE_NOEXCEPT {
             return false;
         }
 
         decltype(auto) await_suspend(std::coroutine_handle<> current_handle) AVALANCHE_NOEXCEPT {
-            handle_type awaiting_handle = awaiting_coroutine_state->get_handle();
+            auto state = awaiting_coroutine_state.lock();
+            handle_type awaiting_handle = state->get_handle();
             auto& promise = awaiting_handle.promise();
 
-            if (awaiting_coroutine_state->set_ready()) {
+            if (state->set_ready()) {
                 if (promise.continuation) {
                     promise.continuation.resume();
                 }

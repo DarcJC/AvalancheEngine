@@ -22,7 +22,7 @@ struct TestNode : avalanche::core::execution::Node<TestNode> {
 using namespace avalanche::core::execution;
 
 inline async<void> foo() {
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    // std::this_thread::sleep_for(std::chrono::milliseconds(500));
     AVALANCHE_LOGGER.info("foo()");
     co_return;
 }
@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
         launch(foo());
     }
 
-    {
+    if (0){
         using namespace avalanche::core::execution;
 
         Graph<TestNode> graph;
