@@ -36,14 +36,14 @@ int main(int argc, char* argv[]) {
 
     {
         using namespace avalanche::core::execution;
-//
-//        Graph<TestNode> graph;
-//        auto u = graph.new_node();
-//        auto v = graph.new_node();
-//        auto root = graph.default_root_node();
-//        graph.add_edge(root, u);
-//        graph.add_edge(root, v);
-//        graph.add_edge(u, v);
+
+        Graph<TestNode> graph{};
+        auto u = graph.new_node();
+        auto v = graph.new_node();
+        auto root = graph.default_root_node();
+        graph.add_edge(root, u);
+        graph.add_edge(root, v);
+        graph.add_edge(u, v);
     }
 
     {

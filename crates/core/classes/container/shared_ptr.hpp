@@ -12,7 +12,7 @@ namespace avalanche {
     template <bool IsAtomic = false>
     class reference_counter {
     public:
-        using inner_type = size_t;
+        using inner_type = int64_t;
         using counter_type = std::conditional_t<IsAtomic, std::atomic<inner_type>, inner_type>;
 
         explicit reference_counter(inner_type default_count = 0) : m_count(default_count) {}
@@ -22,7 +22,7 @@ namespace avalanche {
          */
         inner_type increase() {
             if AVALANCHE_CONSTEXPR (IsAtomic) {
-                return m_count.fetch_add(1, std::memory_order_acquire);
+                return m_count.fetch_add(1, std::memory_order_acquire) + 1;
             } else {
                 return ++m_count;
             }
@@ -30,7 +30,7 @@ namespace avalanche {
 
         inner_type decrease() {
             if AVALANCHE_CONSTEXPR (IsAtomic) {
-                return m_count.fetch_sub(1, std::memory_order_release);
+                return m_count.fetch_sub(1, std::memory_order_release) - 1;
             } else {
                 return --m_count;
             }
@@ -131,7 +131,7 @@ namespace avalanche {
 
         void reset() {
             if (m_control_block) {
-                if (m_control_block->decrease_shared() <= 1) {
+                if (m_control_block->decrease_shared() == 0) {
                     delete m_value;
                     m_value = nullptr;
                     if (m_control_block->m_weak.count() == 0) {
@@ -230,11 +230,9 @@ namespace avalanche {
         void reset() {
             m_value = nullptr;
             if (m_control_block) {
-                if (m_control_block->decrease_weak() == 1) {
-                    delete m_control_block;
-                    m_control_block = nullptr;
-                }
+                m_control_block->decrease_weak();
             }
+            m_control_block = nullptr;
         }
 
         shared_ptr<T, IsAtomic> lock() {
