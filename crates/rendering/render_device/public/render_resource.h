@@ -17,14 +17,9 @@ namespace avalanche::rendering {
         constexpr resource_type_t Unknown = 0;
     }
 
-    class AVALANCHE_RENDER_DEVICE_API IResource {
-    public:
-        virtual ~IResource();
 
-        AVALANCHE_NO_DISCARD virtual resource_type_t get_resource_type() const = 0;
-
-    protected:
-        class Flags {
+    namespace detail {
+        class ResourceFlags {
             struct Bits {
                 static constexpr uint32_t MarkForDelete = 1 << 30;
                 static constexpr uint32_t Deleting = 1 << 31;
@@ -34,24 +29,35 @@ namespace avalanche::rendering {
             std::atomic<uint32_t> m_value { 0 };
 
         public:
-            int32_t increase_rc(std::memory_order memory_order = std::memory_order_seq_cst);
+            AVALANCHE_RENDER_DEVICE_API int32_t increase_rc(std::memory_order memory_order = std::memory_order_seq_cst);
 
-            int32_t decrease_rc(std::memory_order memory_order = std::memory_order_seq_cst);
+            AVALANCHE_RENDER_DEVICE_API int32_t decrease_rc(std::memory_order memory_order = std::memory_order_seq_cst);
 
-            bool mark_for_delete(std::memory_order memory_order = std::memory_order_seq_cst);
+            AVALANCHE_RENDER_DEVICE_API bool mark_for_delete(std::memory_order memory_order = std::memory_order_seq_cst);
 
-            bool unmark_for_delete(std::memory_order memory_order = std::memory_order_seq_cst);
+            AVALANCHE_RENDER_DEVICE_API bool unmark_for_delete(std::memory_order memory_order = std::memory_order_seq_cst);
 
-            bool set_deleting();
+            AVALANCHE_RENDER_DEVICE_API bool set_deleting();
 
-            bool is_valid(std::memory_order memory_order = std::memory_order_seq_cst) const;
+            AVALANCHE_RENDER_DEVICE_API bool is_valid(std::memory_order memory_order = std::memory_order_seq_cst) const;
 
-            bool is_marked_for_delete(std::memory_order memory_order = std::memory_order_seq_cst) const;
+            AVALANCHE_RENDER_DEVICE_API bool is_marked_for_delete(std::memory_order memory_order = std::memory_order_seq_cst) const;
 
-            int32_t ref_count(std::memory_order memory_order) const;
+            AVALANCHE_RENDER_DEVICE_API int32_t ref_count(std::memory_order memory_order) const;
         };
+    }
 
-        mutable Flags m_flag;
+    class IResource {
+    public:
+        AVALANCHE_RENDER_DEVICE_API virtual ~IResource();
+
+        AVALANCHE_RENDER_DEVICE_API AVALANCHE_NO_DISCARD virtual resource_type_t get_resource_type() const = 0;
+
+    protected:
+        AVALANCHE_RENDER_DEVICE_API AVALANCHE_NO_DISCARD detail::ResourceFlags& flags() const;
+
+    private:
+        mutable detail::ResourceFlags m_flag;
     };
 
     template <resource_type_t ResourceType, typename BaseType = IResource>
