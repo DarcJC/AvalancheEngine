@@ -1,12 +1,13 @@
 #pragma once
 
 
+#include "avalanche_render_device_export.h"
 #include <cstdint>
 #include "polyfill.h"
 
 
 namespace avalanche::rendering {
-    class ResourceHandle {
+    class AVALANCHE_RENDER_DEVICE_API ResourceHandle {
     public:
         AVALANCHE_NO_DISCARD static ResourceHandle new_handle();
         AVALANCHE_NO_DISCARD static ResourceHandle null_handle();

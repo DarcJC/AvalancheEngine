@@ -6,6 +6,8 @@
 namespace avalanche::rendering {
 
     class IRenderGraph;
+    class IResource;
+    class ResourceHandle;
 
     struct DeviceFeatures {
         bool ray_tracing = true;
@@ -22,6 +24,16 @@ namespace avalanche::rendering {
         EGPUPowerPreference power_preference = EGPUPowerPreference::HighPerformance;
     };
 
+    class AVALANCHE_RENDER_DEVICE_API IRenderResourcePool {
+    public:
+        static IRenderResourcePool* new_pool();
+        static void delete_pool(const IRenderResourcePool * pool);
+
+        virtual ~IRenderResourcePool();
+
+        virtual IResource* get_resource(const ResourceHandle& handle) = 0;
+    };
+
     class AVALANCHE_RENDER_DEVICE_API IRenderDevice {
     public:
         IRenderDevice();
@@ -31,7 +43,6 @@ namespace avalanche::rendering {
 
         virtual void wait_for_device_idle() = 0;
         virtual void enable_display_support() = 0;
-
     };
 
 }
