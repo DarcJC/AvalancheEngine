@@ -27,4 +27,20 @@ namespace avalanche::window {
 
     void IWindow::show() { glfwShowWindow(m_window); }
 
+    bool IWindow::should_window_close(int flag) const {
+        return true;
+    }
+
+    void IWindow::tick(float delta_time) {
+        if (int flag = glfwWindowShouldClose(m_window)) {
+            if (should_window_close(flag)) {
+                IWindowServer::get()->destroy_window(this);
+                return;
+            }
+            glfwSetWindowShouldClose(m_window, 0);
+        }
+    }
+
+    GLFWwindow *IWindow::get_wrapper_handle() const { return m_window; }
+
 } // namespace avalanche::window

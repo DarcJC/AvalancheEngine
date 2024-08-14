@@ -20,10 +20,10 @@ namespace avalanche::window {
         string title = "Avalanche Engine";
     };
 
-    class AVALANCHE_WINDOW_SERVER_API IWindow {
+    class AVALANCHE_WINDOW_SERVER_API IWindow : public core::ITickable {
     public:
         explicit IWindow(GLFWwindow* window);
-        virtual ~IWindow();
+        ~IWindow() override;
 
         virtual void maximize();
         virtual void minimize();
@@ -36,7 +36,16 @@ namespace avalanche::window {
 
         virtual void show();
 
+        virtual bool should_window_close(int flag) const;
+
+        /**
+         * @brief Window's tick isn't managed by TickManager directly in normal.
+         */
+        void tick(float delta_time) override;
+
     protected:
+        AVALANCHE_NO_DISCARD GLFWwindow* get_wrapper_handle() const;
+
         GLFWwindow* m_window;
     };
 
@@ -46,10 +55,13 @@ namespace avalanche::window {
      */
     class AVALANCHE_WINDOW_SERVER_API IWindowServer : public core::ServerCRTPBase<IWindowServer>, public core::ITickable {
     public:
+        AVALANCHE_NO_DISCARD static IWindowServer* get();
+
         virtual IWindow* create_window(const WindowSettings& settings) = 0;
         virtual void destroy_window(IWindow* window) = 0;
         virtual void initialize() = 0;
         virtual void deinitialize() = 0;
+        virtual void register_external_window(IWindow* window) = 0;
 
         void tick(duration_type delta_time) override;
 

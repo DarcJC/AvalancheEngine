@@ -11,9 +11,14 @@ namespace avalanche::window {
         core::ITickManager::get().register_tickable(this, core::TickGroup::PreRendering);
         this->initialize();
     }
+
     void IWindowServer::on_shutdown() {
         deinitialize();
         core::ITickManager::get().unregister_tickable(this);
         glfwTerminate();
+    }
+
+    IWindowServer* IWindowServer::get() {
+        return core::ServerManager::get().get_server_checked<IWindowServer>();
     }
 } // namespace avalanche::window

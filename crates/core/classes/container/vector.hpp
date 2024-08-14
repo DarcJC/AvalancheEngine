@@ -46,6 +46,10 @@ namespace avalanche {
                 new_capacity = m_capacity ? m_capacity * 2 : 8;
             }
 
+            if (new_capacity < m_capacity) {
+                return;
+            }
+
             pointer_type new_data = m_allocator.allocate(new_capacity);
             AVALANCHE_CHECK(m_length <= m_capacity, "vector conatiner internal error: length > capacity");
             for (size_type i = 0; i < m_length; ++i) {
