@@ -37,6 +37,7 @@ namespace avalanche::rendering::vulkan
         explicit AvailableQueue(vk::PhysicalDevice physical_device);
 
         index_type acquire_queue_index(EQueueType queue_type);
+        vector<uint32_t> acquire_all_queue_family_indices();
     };
 
     class Context final {
@@ -47,6 +48,7 @@ namespace avalanche::rendering::vulkan
         AVALANCHE_NO_DISCARD vk::Instance instance() const;
         AVALANCHE_NO_DISCARD vk::PhysicalDevice physical_device() const;
         AVALANCHE_NO_DISCARD vk::Device device() const;
+        AVALANCHE_NO_DISCARD AvailableQueue* available_queues() const;
 
     protected:
         DeviceSettings m_device_settings;

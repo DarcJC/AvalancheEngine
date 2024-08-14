@@ -90,6 +90,21 @@ namespace avalanche::rendering::vulkan {
     vk::Device Context::create_device() const {
         vk::DeviceCreateInfo device_create_info{};
         const vk::PhysicalDeviceFeatures2 features = m_primary_physical_device.getFeatures2();
+
+        std::vector<vk::DeviceQueueCreateInfo> queue_family_indices{};
+        vector<uint32_t> required_queue_indices = m_available_queue->acquire_all_queue_family_indices();
+        float priorities[] { 1.0f };
+        for (auto index : required_queue_indices) {
+            vk::DeviceQueueCreateInfo info{};
+            info
+                .setQueueFamilyIndex(index)
+                .setPQueuePriorities(priorities)
+                .setFlags(vk::DeviceQueueCreateFlags{})
+                .setQueueCount(1)
+            ;
+            queue_family_indices.push_back(info);
+        }
+
         device_create_info
             .setEnabledExtensionCount(static_cast<uint32_t>(m_extensions_and_layers.device_extensions.size()))
             .setPEnabledExtensionNames(m_extensions_and_layers.device_extensions)
@@ -97,6 +112,7 @@ namespace avalanche::rendering::vulkan {
             .setPEnabledLayerNames(m_extensions_and_layers.device_layers)
             .setPEnabledFeatures(nullptr)
             .setPNext(&features)
+            .setQueueCreateInfos(queue_family_indices)
         ;
 
         return m_primary_physical_device.createDevice(device_create_info);
@@ -141,8 +157,10 @@ namespace avalanche::rendering::vulkan {
         return m_primary_physical_device;
     }
 
-    vk::Device Context::device() const {
-        return m_device;
+    vk::Device Context::device() const { return m_device; }
+
+    AvailableQueue* Context::available_queues() const {
+        return m_available_queue.get();
     }
 
     void Context::init_vulkan_dispatcher() {

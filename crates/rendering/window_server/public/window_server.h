@@ -7,22 +7,24 @@
 #include "manager/server_manager.h"
 
 #include <manager/tick_manager.h>
+#include <render_device.h>
 
 
 namespace avalanche::window {
 
     struct WindowSettings {
-        int32_t width = 800;
-        int32_t height = 600;
+        uint32_t width = 800;
+        uint32_t height = 600;
         int32_t refresh_rate = 60;
         bool fullscreen = false;
         bool low_input_latency = false;
         string title = "Avalanche Engine";
+        bool vsync = true;
     };
 
     class AVALANCHE_WINDOW_SERVER_API IWindow : public core::ITickable {
     public:
-        explicit IWindow(GLFWwindow* window);
+        explicit IWindow(const WindowSettings& settings, rendering::IRenderDevice* device);
         ~IWindow() override;
 
         virtual void maximize();
@@ -47,6 +49,8 @@ namespace avalanche::window {
         AVALANCHE_NO_DISCARD GLFWwindow* get_wrapper_handle() const;
 
         GLFWwindow* m_window;
+        rendering::IRenderDevice* m_render_device;
+        WindowSettings m_settings;
     };
 
     /**

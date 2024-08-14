@@ -5,8 +5,10 @@ namespace avalanche::window {
 
     IWindow::~IWindow() = default;
 
-    IWindow::IWindow(GLFWwindow *window)
-        : m_window(window)
+    IWindow::IWindow(const WindowSettings& settings, rendering::IRenderDevice* device)
+        : m_window(glfwCreateWindow(settings.width, settings.height, settings.title.data(), settings.fullscreen ? glfwGetPrimaryMonitor() : nullptr, nullptr))
+        , m_render_device(device)
+        , m_settings(settings)
     {}
 
     void IWindow::maximize() {

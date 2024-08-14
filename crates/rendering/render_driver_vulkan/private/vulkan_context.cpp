@@ -2,6 +2,7 @@
 #include "vulkan_context.h"
 #include "vulkan_macro.h"
 #include "GLFW/glfw3.h"
+#include <set>
 
 namespace avalanche::rendering::vulkan {
 
@@ -18,6 +19,7 @@ namespace avalanche::rendering::vulkan {
             res.device_extensions.push_back(VK_KHR_RAY_QUERY_EXTENSION_NAME);
             res.device_extensions.push_back(VK_KHR_ACCELERATION_STRUCTURE_EXTENSION_NAME);
             res.device_extensions.push_back(VK_KHR_RAY_TRACING_POSITION_FETCH_EXTENSION_NAME);
+            res.device_extensions.push_back(VK_KHR_DEFERRED_HOST_OPERATIONS_EXTENSION_NAME);
         }
 
         if (features.line_rasterization) {
@@ -163,6 +165,17 @@ namespace avalanche::rendering::vulkan {
             raise_exception(queue_not_available());
         }
         return indices.front_item();
+    }
+    vector<uint32_t> AvailableQueue::acquire_all_queue_family_indices() {
+        vector<uint32_t> res;
+        std::set<uint32_t> s;
+        for (int i = static_cast<int>(EQueueType::Graphics); i < static_cast<uint8_t>(EQueueType::Max); ++i) {
+            s.insert(acquire_queue_index(static_cast<EQueueType>(i)));
+        }
+        for (uint32_t i = 0; i < s.size(); ++i) {
+            res.push_back(i);
+        }
+        return res;
     }
 
     queue_not_available::queue_not_available() : simple_error("Specified queue is not available") {}

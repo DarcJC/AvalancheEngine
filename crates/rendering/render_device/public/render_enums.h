@@ -10,7 +10,7 @@ namespace avalanche::rendering {
     };
 
     enum class EQueueType : uint8_t {
-        Graphics,
+        Graphics = 0,
         Compute,
         Transfer,
         SparseBinding,

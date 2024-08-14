@@ -35,12 +35,14 @@ namespace avalanche::rendering::vulkan {
 
     class VulkanWindow : public window::IWindow {
     public:
-        explicit VulkanWindow(const window::WindowSettings& settings, vk::Instance instance);
+        explicit VulkanWindow(const window::WindowSettings& settings, RenderDevice* render_device);
         ~VulkanWindow() override;
 
-    private:
-        vk::SurfaceKHR m_surface;
+        void create_swapchain();
 
+    private:
+        vk::SurfaceKHR m_surface = nullptr;
+        vk::SwapchainKHR m_swapchain = nullptr;
         friend class VulkanWindowServer;
     };
 
