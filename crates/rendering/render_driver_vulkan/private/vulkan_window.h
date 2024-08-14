@@ -38,11 +38,14 @@ namespace avalanche::rendering::vulkan {
         explicit VulkanWindow(const window::WindowSettings& settings, RenderDevice* render_device);
         ~VulkanWindow() override;
 
+    protected:
         void create_swapchain();
+        void clean_swapchain_images();
 
     private:
         vk::SurfaceKHR m_surface = nullptr;
         vk::SwapchainKHR m_swapchain = nullptr;
+
         friend class VulkanWindowServer;
     };
 

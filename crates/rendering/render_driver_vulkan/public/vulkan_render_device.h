@@ -13,6 +13,7 @@ namespace avalanche::rendering::vulkan {
         ~RenderDevice() override;
 
         // Begin IRenderDevice interface
+        EGraphicsAPIType get_graphics_api_type() override;
         void wait_for_device_idle() override;
         void enable_display_support() override;
         // End IRenderDevice interface

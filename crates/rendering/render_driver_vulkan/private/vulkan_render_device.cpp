@@ -45,8 +45,10 @@ namespace avalanche::rendering::vulkan {
         return make_unique<RenderDevice>(settings);
     }
 
-    RenderDevice::~RenderDevice() {
-        delete m_impl;
+    RenderDevice::~RenderDevice() { delete m_impl; }
+
+    EGraphicsAPIType RenderDevice::get_graphics_api_type() {
+        return EGraphicsAPIType::Vulkan;
     }
 
     void RenderDevice::wait_for_device_idle() { m_impl->wait_for_device_idle(); }

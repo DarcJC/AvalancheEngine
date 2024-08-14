@@ -18,4 +18,12 @@ namespace avalanche::rendering {
         VideoEncode,
         Max,
     };
+
+    enum class EGraphicsAPIType : uint8_t {
+        None,
+        Vulkan,
+        D3D12,
+        Max,
+    };
+
 }

@@ -27,8 +27,11 @@ namespace avalanche::rendering {
         IRenderDevice();
         virtual ~IRenderDevice();
 
+        virtual EGraphicsAPIType get_graphics_api_type() = 0;
+
         virtual void wait_for_device_idle() = 0;
         virtual void enable_display_support() = 0;
+
     };
 
 }
