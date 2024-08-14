@@ -25,8 +25,10 @@ namespace avalanche::core {
         constexpr tick_group_t PostUpdate = 5.f;
         // Before rendering
         constexpr tick_group_t PreRendering = 6.f;
+        // Collecting rendering resource
+        constexpr tick_group_t CollectRenderingResource = 7.f;
         // Tick newly spawned
-        constexpr tick_group_t NewlySpawned = 7.f;
+        constexpr tick_group_t NewlySpawned = 8.f;
     } // namespace TickGroup
 
     /**

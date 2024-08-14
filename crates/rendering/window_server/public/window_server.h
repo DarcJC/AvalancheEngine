@@ -6,6 +6,8 @@
 #include "container/string.hpp"
 #include "manager/server_manager.h"
 
+#include <manager/tick_manager.h>
+
 
 namespace avalanche::window {
 
@@ -42,12 +44,14 @@ namespace avalanche::window {
      * @brief The Window Manager
      * Using glfw3 as the window context provider.
      */
-    class AVALANCHE_WINDOW_SERVER_API IWindowServer : public core::ServerCRTPBase<IWindowServer> {
+    class AVALANCHE_WINDOW_SERVER_API IWindowServer : public core::ServerCRTPBase<IWindowServer>, public core::ITickable {
     public:
         virtual IWindow* create_window(const WindowSettings& settings) = 0;
         virtual void destroy_window(IWindow* window) = 0;
         virtual void initialize() = 0;
         virtual void deinitialize() = 0;
+
+        void tick(duration_type delta_time) override;
 
         void on_startup() override;
         void on_shutdown() override;

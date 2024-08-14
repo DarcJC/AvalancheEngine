@@ -29,14 +29,6 @@ inline async<void> foo() {
     co_return;
 }
 
-struct Bar : public TickableCRTPBase<Bar> {
-
-    void tick(ITickable::duration_type delta_time) override {
-        AVALANCHE_LOGGER.info("Delta Time: {}ms", delta_time);
-    }
-
-};
-
 int main(int argc, char* argv[]) {
     {
         launch(foo());
@@ -65,8 +57,6 @@ int main(int argc, char* argv[]) {
         auto* window_server = avalanche::core::ServerManager::get().get_server_checked<avalanche::window::IWindowServer>();
         avalanche::window::IWindow* window = window_server->create_window({});
     }
-
-    Bar bar{};
 
     ITickManager& ticker = ITickManager::get();
     while (ticker.tick_frame())
