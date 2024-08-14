@@ -1,8 +1,10 @@
 #pragma once
 
+#define GLFW_INCLUDE_VULKAN
 #include <cstdint>
 #include "container/vector.hpp"
 #include "window_server.h"
+#include "vulkan/vulkan.hpp"
 
 namespace avalanche::rendering::vulkan {
 
@@ -11,8 +13,6 @@ namespace avalanche::rendering::vulkan {
 
     class VulkanWindowServer final : public window::IWindowServer {
     public:
-        VulkanWindowServer();
-
         window::IWindow* create_window(const window::WindowSettings& settings) override;
         void destroy_window(window::IWindow* window) override;
 
@@ -35,10 +35,12 @@ namespace avalanche::rendering::vulkan {
 
     class VulkanWindow : public window::IWindow {
     public:
-        explicit VulkanWindow(const window::WindowSettings& settings);
+        explicit VulkanWindow(const window::WindowSettings& settings, vk::Instance instance);
         ~VulkanWindow() override;
 
     private:
+        vk::SurfaceKHR m_surface;
+
         friend class VulkanWindowServer;
     };
 

@@ -1,17 +1,17 @@
 #include "vulkan_window.h"
 
-#define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <vulkan_macro.h>
+#include "vulkan_context.h"
+#include "vulkan_render_device.h"
 
 
 namespace avalanche::rendering::vulkan {
 
-    VulkanWindowServer::VulkanWindowServer() : m_render_device(nullptr), m_windows(1) {}
-
     window::IWindow* VulkanWindowServer::create_window(const window::WindowSettings& settings) {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
         glfwWindowHint(GLFW_REFRESH_RATE, settings.refresh_rate);
-        auto* window = new VulkanWindow(settings);
+        auto* window = new VulkanWindow(settings, m_render_device->get_context().instance());
         m_windows.emplace_back(window);
 
         return window;
@@ -53,9 +53,12 @@ namespace avalanche::rendering::vulkan {
         }
     }
 
-    VulkanWindow::VulkanWindow(const window::WindowSettings &settings)
-        : window::IWindow(glfwCreateWindow(settings.width, settings.height, settings.title.data(), settings.fullscreen ? glfwGetPrimaryMonitor() : nullptr, nullptr))
-    {}
+    VulkanWindow::VulkanWindow(const window::WindowSettings &settings, vk::Instance instance)
+        : window::IWindow(glfwCreateWindow(settings.width, settings.height, settings.title.data(), settings.fullscreen ? glfwGetPrimaryMonitor() : nullptr, nullptr)) {
+        VkSurfaceKHR surface;
+        AVALANCHE_CHECK_VK_SUCCESS(glfwCreateWindowSurface(instance, m_window, nullptr, &surface));
+        m_surface = surface;
+    }
 
     VulkanWindow::~VulkanWindow() {
         glfwDestroyWindow(m_window);

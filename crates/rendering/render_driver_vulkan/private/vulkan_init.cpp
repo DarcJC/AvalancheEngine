@@ -15,8 +15,6 @@ VULKAN_HPP_DEFAULT_DISPATCH_LOADER_DYNAMIC_STORAGE
 namespace avalanche::rendering::vulkan {
 
     vk::Instance Context::create_instance() const {
-        init_vulkan_dispatcher();
-
         vk::ApplicationInfo app_info("AvalancheEngine", AVALANCHE_PROJECT_VERSION_MAJOR, "AvalancheEngine", AVALANCHE_PROJECT_VERSION_MAJOR, VK_API_VERSION_1_3);
         vk::InstanceCreateInfo create_info({}, &app_info);
 
@@ -106,6 +104,7 @@ namespace avalanche::rendering::vulkan {
 
     Context::Context(const DeviceSettings& device_settings)
             : m_device_settings(device_settings) {
+        init_vulkan_dispatcher();
         m_extensions_and_layers = ExtensionAndLayer::create_from_features(m_device_settings.required_features);
         AVALANCHE_CHECK_RUNTIME(m_extensions_and_layers.validate_instance(), "Found invalid instance layer(s) or extension(s)");
 

@@ -22,12 +22,17 @@ namespace avalanche::rendering::vulkan {
             m_context->device().waitIdle();
         }
 
-        void enable_display_support() {
+        void enable_display_support() const {
+            AVALANCHE_CHECK_RUNTIME(core::ServerManager::get().get_server<VulkanWindowServer>() == nullptr, "Only one RenderDevice allow to enable display support.");
             static std::once_flag once;
             std::call_once(once, [this]() {
-                VulkanWindowServer* window_server = new VulkanWindowServer();
+                auto* window_server = new VulkanWindowServer(m_parent);
                 core::ServerManager::get().register_server(window_server);
             });
+        }
+
+        AVALANCHE_NO_DISCARD Context& get_context() const {
+            return *m_context;
         }
 
     private:
@@ -46,8 +51,10 @@ namespace avalanche::rendering::vulkan {
 
     void RenderDevice::wait_for_device_idle() { m_impl->wait_for_device_idle(); }
 
-    void RenderDevice::enable_display_support() {
-        m_impl->enable_display_support();
+    void RenderDevice::enable_display_support() { m_impl->enable_display_support(); }
+
+    Context& RenderDevice::get_context() const {
+        return m_impl->get_context();
     }
 
     RenderDevice::RenderDevice(const DeviceSettings& settings) {

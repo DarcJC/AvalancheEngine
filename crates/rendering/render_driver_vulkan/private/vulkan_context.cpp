@@ -44,6 +44,8 @@ namespace avalanche::rendering::vulkan {
         }
 
         if (features.display) {
+            glfwInit();
+            AVALANCHE_CHECK_RUNTIME(glfwVulkanSupported(), "GLFW doesn't compatible with current vulkan runtime");
             res.device_extensions.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
             uint32_t count_glfw_extensions;

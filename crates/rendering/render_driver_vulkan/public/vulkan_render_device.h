@@ -1,8 +1,8 @@
 #pragma once
 
 #include "avalanche_render_driver_vulkan_export.h"
-#include "render_device.h"
 #include "container/unique_ptr.hpp"
+#include "render_device.h"
 
 
 namespace avalanche::rendering::vulkan {
@@ -16,6 +16,8 @@ namespace avalanche::rendering::vulkan {
         void wait_for_device_idle() override;
         void enable_display_support() override;
         // End IRenderDevice interface
+
+        class Context& get_context() const;
 
         static unique_ptr<RenderDevice> create_instance(const DeviceSettings& settings);
     private:

@@ -20,7 +20,9 @@ namespace avalanche::core {
         void register_server(IServer* server) override {
             AVALANCHE_CHECK(nullptr != server, "Trying to register invalid server");
             std::unique_lock<std::shared_mutex> lock(m_mutex);
-            m_servers.insert_or_assign(server->get_server_id(), server);
+            auto sid = server->get_server_id();
+            AVALANCHE_CHECK_RUNTIME(!m_servers.contains(sid), "Server {} already exist", sid);
+            m_servers.insert_or_assign(sid, server);
             // TODO: move startup event out of here
             server->on_startup();
         }
