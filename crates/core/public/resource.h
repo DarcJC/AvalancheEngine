@@ -15,11 +15,11 @@ namespace avalanche::core {
         AVALANCHE_NO_DISCARD static ResourceHandle new_handle();
         AVALANCHE_NO_DISCARD static ResourceHandle null_handle();
 
-        ResourceHandle(const ResourceHandle& other);
-        ResourceHandle& operator=(const ResourceHandle& other);
+        ResourceHandle(const ResourceHandle& other) AVALANCHE_NOEXCEPT;
+        ResourceHandle& operator=(const ResourceHandle& other) AVALANCHE_NOEXCEPT;
 
-        ResourceHandle(ResourceHandle&&) = delete;
-        ResourceHandle& operator=(ResourceHandle&& other) = delete;
+        ResourceHandle(ResourceHandle&&) AVALANCHE_NOEXCEPT;
+        ResourceHandle& operator=(ResourceHandle&& other) AVALANCHE_NOEXCEPT;
 
         ~ResourceHandle();
 

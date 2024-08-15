@@ -12,8 +12,14 @@ namespace avalanche::core {
     }
     ResourceHandle ResourceHandle::null_handle() { return ResourceHandle{0}; }
 
-    ResourceHandle::ResourceHandle(const ResourceHandle &other) = default;
-    ResourceHandle &ResourceHandle::operator=(const ResourceHandle &other) = default;
+    ResourceHandle::ResourceHandle(const ResourceHandle &other) AVALANCHE_NOEXCEPT = default;
+    ResourceHandle& ResourceHandle::operator=(const ResourceHandle &other) AVALANCHE_NOEXCEPT = default;
+
+    ResourceHandle::ResourceHandle(ResourceHandle&& other) AVALANCHE_NOEXCEPT : ResourceHandle(static_cast<const ResourceHandle&>(other)) {}
+    ResourceHandle& ResourceHandle::operator=(ResourceHandle&& other) AVALANCHE_NOEXCEPT {
+        *this = static_cast<const ResourceHandle&>(other);
+        return *this;
+    }
 
     ResourceHandle::~ResourceHandle() {
         HandleFreeDelegate.invoke(*this);

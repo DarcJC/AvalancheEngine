@@ -67,8 +67,8 @@ namespace avalanche {
         }
 
     public:
-        vector_base() : m_data(nullptr), m_length(0), m_capacity(0) {}
-        explicit vector_base(const allocator_type& allocator) : m_allocator(allocator), m_data(nullptr), m_length(0), m_capacity(0) {}
+        vector_base() : m_data(nullptr), m_capacity(0), m_length(0) {}
+        explicit vector_base(const allocator_type& allocator) : m_allocator(allocator), m_data(nullptr), m_capacity(0), m_length(0) {}
         explicit vector_base(size_type default_capacity) : vector_base() {
             resize_internal(default_capacity);
         }

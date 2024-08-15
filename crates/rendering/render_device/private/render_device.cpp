@@ -2,10 +2,11 @@
 // Created by DarcJC on 2024/8/1.
 //
 #include "render_device.h"
+
+#include <ranges>
+#include <unordered_map>
 #include "render_resource.h"
 #include "resource.h"
-#include <unordered_map>
-#include <deque>
 
 namespace avalanche::rendering {
     using core::handle_t;
@@ -13,22 +14,44 @@ namespace avalanche::rendering {
     class RenderResourcePool : public IRenderResourcePool {
     public:
         explicit RenderResourcePool(IRenderDevice* render_device)
-            : m_render_device(render_device)
-        {}
+            : m_resource{}
+            , m_render_device(render_device) {
+            AVALANCHE_CHECK_RUNTIME(m_render_device != nullptr, "Invalid render device");
+        }
 
         IResource* get_resource(const core::handle_t &handle) override {
-            AVALANCHE_TODO();
+            if (const auto it = m_resource.find(handle); it != m_resource.end()) {
+                return it->second;
+            }
             return nullptr;
         }
 
         handle_t register_resource(IResource *resource) override {
-            AVALANCHE_TODO();
-            return handle_t::null_handle();
+            AVALANCHE_CHECK(nullptr != resource, "Invalid resource");
+            AVALANCHE_CHECK(is_resource_exist(resource), "Resource is already exist");
+            handle_t handle = handle_t::new_handle();
+            m_resource[handle] = resource;
+            return handle;
         }
 
         ~RenderResourcePool() override {
+            reset();
+        }
+
+        void reset() {
+            for (const auto &res: m_resource | std::views::values) {
+                m_render_device->add_pending_delete_resource(res);
+            }
+            m_resource.clear();
+        }
+
+        bool is_resource_exist(IResource* resource) {
+            const auto view = m_resource | std::views::values;
+            return std::ranges::find(view, resource) != view.end();
         }
     private:
+        std::unordered_map<handle_t, IResource*> m_resource;
+
         IRenderDevice* m_render_device;
     };
 
@@ -42,12 +65,18 @@ namespace avalanche::rendering {
 
     IRenderResourcePool::~IRenderResourcePool() = default;
 
-    IRenderDevice::IRenderDevice() = default;
+    IRenderDevice::IRenderDevice()
+        : m_render_resource_pool(IRenderResourcePool::new_pool(this))
+    {}
 
-    IRenderDevice::~IRenderDevice() = default;
+    IRenderDevice::~IRenderDevice() {
+        delete m_render_resource_pool;
+    }
 
-    void IRenderDevice::add_pending_delete_resource(IResource* resource) {
-        resource->flags().mark_for_delete();
+    void IRenderDevice::add_pending_delete_resource(IResource *resource) { resource->flags().mark_for_delete(); }
+
+    IRenderResourcePool* IRenderDevice::get_resource_pool() const {
+        return m_render_resource_pool;
     }
 
 } // namespace avalanche::rendering
