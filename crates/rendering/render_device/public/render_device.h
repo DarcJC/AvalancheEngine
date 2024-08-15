@@ -2,10 +2,7 @@
 
 #include "avalanche_render_device_export.h"
 #include "render_enums.h"
-
-namespace avalanche::core {
-    class ResourceHandle;
-}
+#include "resource.h"
 
 namespace avalanche::rendering {
 
@@ -35,7 +32,8 @@ namespace avalanche::rendering {
 
         virtual ~IRenderResourcePool();
 
-        virtual IResource* get_resource(const core::ResourceHandle& handle) = 0;
+        virtual IResource* get_resource(const core::handle_t& handle) = 0;
+        virtual core::handle_t register_resource(IResource* resource) = 0;
     };
 
     class AVALANCHE_RENDER_DEVICE_API IRenderDevice {

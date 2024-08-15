@@ -2,12 +2,14 @@
 
 #include "avalanche_core_export.h"
 #include "polyfill.h"
+#include "delegate.h"
 #include <cstdint>
 #include <compare>  // for the <=> compare
 #include <atomic>
 #include <functional>
 
 namespace avalanche::core {
+
     class AVALANCHE_CORE_API ResourceHandle {
     public:
         AVALANCHE_NO_DISCARD static ResourceHandle new_handle();
@@ -19,16 +21,26 @@ namespace avalanche::core {
         ResourceHandle(ResourceHandle&&) = delete;
         ResourceHandle& operator=(ResourceHandle&& other) = delete;
 
+        ~ResourceHandle();
+
         AVALANCHE_NO_DISCARD uint64_t raw_value() const;
 
         bool operator==(const ResourceHandle& other) const;
         bool operator!=(const ResourceHandle& other) const;
+
+        /**
+         * @brief Forbid new operator as I don't want a vtable.
+         */
+        static void* operator new(size_t) = delete;
 
     private:
         explicit ResourceHandle(uint64_t in_value);
 
         uint64_t m_value = 0;
     };
+
+    AVALANCHE_CORE_API extern multicast_delegate<const ResourceHandle&> HandleCreateDelegate;
+    AVALANCHE_CORE_API extern multicast_delegate<const ResourceHandle&> HandleFreeDelegate;
 
     using handle_t = ResourceHandle;
 }

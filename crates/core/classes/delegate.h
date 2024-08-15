@@ -1,17 +1,14 @@
-//
-// Created by DarcJC on 2024/3/5.
-//
 #pragma once
 
-#include <functional>
-#include <optional>
-#include <vector>
+#include "container/functional.h"
+#include "container/vector.hpp"
+#include "container/optional.hpp"
 
-namespace avalanche::core {
+namespace avalanche {
     template<typename... Args>
-    class MulticastDelegate {
+    class multicast_delegate {
     public:
-        using DelegateType = std::function<void(Args...)>;
+        using DelegateType = function<void(Args...)>;
 
         void add(const DelegateType& delegate) {
             delegates.push_back(delegate);
@@ -28,13 +25,13 @@ namespace avalanche::core {
         }
 
     private:
-        std::vector<DelegateType> delegates;
+        vector<DelegateType> delegates;
     };
 
     template<typename R, typename... Args>
-    class UnicastDelegate {
+    class unicast_delegate {
     public:
-        using DelegateType = std::function<R(Args...)>;
+        using DelegateType = function<R(Args...)>;
 
         void bind(const DelegateType& delegate_in) {
             this->delegate = delegate_in;
@@ -44,7 +41,7 @@ namespace avalanche::core {
             this->delegate.reset();
         }
 
-        std::optional<R> invoke(Args... args) {
+        optional<R> invoke(Args... args) {
             if (delegate) {
                 return (*delegate)(args...);
             }
@@ -52,6 +49,6 @@ namespace avalanche::core {
         }
 
     private:
-        std::optional<DelegateType> delegate;
+        optional<DelegateType> delegate;
     };
 }

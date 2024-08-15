@@ -5,59 +5,31 @@
 #include "render_resource.h"
 #include "resource.h"
 #include <unordered_map>
+#include <deque>
 
 namespace avalanche::rendering {
     using core::handle_t;
 
     class RenderResourcePool : public IRenderResourcePool {
-        struct ResourceBlock {
-            IResource* resource = nullptr;
-            ResourceBlock* prev = nullptr;
-            ResourceBlock* next = nullptr;
-        };
-
     public:
         explicit RenderResourcePool(IRenderDevice* render_device)
             : m_render_device(render_device)
-            , m_head_block {
-                .resource = nullptr,
-                .prev = nullptr,
-                .next = nullptr,
-            }
-            , m_query_map()
         {}
 
-        ~RenderResourcePool() override {
-            reset();
-        }
-
-        IResource* get_resource(const handle_t& handle) override {
+        IResource* get_resource(const core::handle_t &handle) override {
             AVALANCHE_TODO();
             return nullptr;
         }
 
-        void reset() {
-            ResourceBlock* current = m_head_block.next;
-
-            while (nullptr != current) {
-                if (nullptr != current->resource) {
-                    m_render_device->add_pending_delete_resource(current->resource);
-                }
-
-                ResourceBlock* next_block = current->next;
-
-                delete current;
-
-                current = next_block;
-            }
-
-            m_head_block.next = nullptr;
+        handle_t register_resource(IResource *resource) override {
+            AVALANCHE_TODO();
+            return handle_t::null_handle();
         }
 
+        ~RenderResourcePool() override {
+        }
     private:
         IRenderDevice* m_render_device;
-        ResourceBlock m_head_block;
-        std::unordered_map<handle_t, ResourceBlock*> m_query_map;
     };
 
     IRenderResourcePool *IRenderResourcePool::new_pool(IRenderDevice* render_device) {

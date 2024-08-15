@@ -6,7 +6,6 @@
 #include <cstddef>
 #include <string_view>
 #include <format>
-#include "delegate.h"
 #include "polyfill.h"
 
 namespace avalanche::core {
