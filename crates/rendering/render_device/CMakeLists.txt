@@ -1,7 +1,7 @@
 
 set(RENDER_DEVICE_SOURCE
         "private/render_device.cpp" "private/render_dependency_graph.cpp"
-        "private/render_handle.cpp" "private/render_resource.cpp"
+        "private/render_resource.cpp"
 )
 
 avalanche_target(

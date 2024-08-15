@@ -5,58 +5,38 @@
 #include <cstdint>
 #include <compare>  // for the <=> compare
 #include <atomic>
+#include <functional>
 
 namespace avalanche::core {
-
-    enum class ResourceType : uint8_t {
-        Invalid = 0,
-        Rendering,
-        Geometry,
-        Other,
-    };
-
     class AVALANCHE_CORE_API ResourceHandle {
     public:
-        using size_type = uint64_t;
+        AVALANCHE_NO_DISCARD static ResourceHandle new_handle();
+        AVALANCHE_NO_DISCARD static ResourceHandle null_handle();
 
-        ResourceHandle(nullptr_t = nullptr);
-        ResourceHandle(const ResourceHandle &);
-        ResourceHandle(ResourceHandle &&) AVALANCHE_NOEXCEPT;
-        ResourceHandle& operator=(const ResourceHandle &);
-        ResourceHandle& operator=(ResourceHandle &&) AVALANCHE_NOEXCEPT;
+        ResourceHandle(const ResourceHandle& other);
+        ResourceHandle& operator=(const ResourceHandle& other);
 
-        void swap(ResourceHandle& other) AVALANCHE_NOEXCEPT;
-        AVALANCHE_NO_DISCARD ResourceType type() const AVALANCHE_NOEXCEPT;
-        AVALANCHE_NO_DISCARD size_type operator*() const AVALANCHE_NOEXCEPT;
+        ResourceHandle(ResourceHandle&&) = delete;
+        ResourceHandle& operator=(ResourceHandle&& other) = delete;
+
+        AVALANCHE_NO_DISCARD uint64_t raw_value() const;
+
+        bool operator==(const ResourceHandle& other) const;
+        bool operator!=(const ResourceHandle& other) const;
 
     private:
-        ResourceHandle(ResourceType resource_type, size_type value);
+        explicit ResourceHandle(uint64_t in_value);
 
-        /**
-         * High 0 - 7 bits is resource type
-         * Lower 0 - 47 bits is an atomic increase
-         */
-        size_type m_resource_identifier;
-
-        template <ResourceType ResourceType>
-        friend class ResourceHandleAllocator;
+        uint64_t m_value = 0;
     };
 
-    template <ResourceType TyRes>
-    class ResourceHandleAllocator {
-    private:
-        std::atomic<ResourceHandle::size_type> m_current_atomic = 0;
-
-    public:
-        ResourceHandle allocate_resource_handle() AVALANCHE_NOEXCEPT {
-            return { TyRes, m_current_atomic++ };
-        }
-
-        ResourceHandle allocate_resource_handle(ResourceType resource_type) AVALANCHE_NOEXCEPT {
-            return { resource_type, m_current_atomic++ };
-        }
-    };
-
-    AVALANCHE_CORE_API std::strong_ordering operator<=>(const ResourceHandle& lhs, const ResourceHandle& rhs) AVALANCHE_NOEXCEPT;
-
+    using handle_t = ResourceHandle;
 }
+
+
+template <>
+struct std::hash<avalanche::core::handle_t> {
+    std::size_t operator()(const avalanche::core::handle_t& handle) const AVALANCHE_NOEXCEPT {
+        return std::hash<uint64_t>{}(handle.raw_value());
+    }
+};

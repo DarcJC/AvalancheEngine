@@ -55,7 +55,12 @@ namespace avalanche::rendering::vulkan {
 
     void RenderDevice::enable_display_support() { m_impl->enable_display_support(); }
 
-    Context& RenderDevice::get_context() const {
+    void RenderDevice::add_pending_delete_resource(IResource *resource) {
+        IRenderDevice::add_pending_delete_resource(resource);
+        AVALANCHE_TODO("Use a queue");
+    }
+
+    Context & RenderDevice::get_context() const {
         return m_impl->get_context();
     }
 

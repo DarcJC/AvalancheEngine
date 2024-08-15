@@ -8,8 +8,11 @@
 
 namespace avalanche::rendering::vulkan {
 
-    decltype(auto) to_vulkan_render_device(IRenderDevice* device) {
-        return static_cast<RenderDevice*>(device);
+    RenderDevice* to_vulkan_render_device(IRenderDevice* device) {
+        if (device && device->get_graphics_api_type() == EGraphicsAPIType::Vulkan) {
+            return static_cast<RenderDevice*>(device);
+        }
+        return nullptr;
     }
 
     window::IWindow* VulkanWindowServer::create_window(const window::WindowSettings& settings) {

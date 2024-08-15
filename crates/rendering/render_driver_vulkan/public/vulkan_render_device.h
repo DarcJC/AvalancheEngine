@@ -16,9 +16,10 @@ namespace avalanche::rendering::vulkan {
         EGraphicsAPIType get_graphics_api_type() override;
         void wait_for_device_idle() override;
         void enable_display_support() override;
+        void add_pending_delete_resource(IResource *resource) override;
         // End IRenderDevice interface
 
-        class Context& get_context() const;
+        AVALANCHE_NO_DISCARD class Context& get_context() const;
 
         static unique_ptr<RenderDevice> create_instance(const DeviceSettings& settings);
     private:

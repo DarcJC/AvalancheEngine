@@ -53,7 +53,6 @@ namespace avalanche::rendering {
 
         AVALANCHE_RENDER_DEVICE_API AVALANCHE_NO_DISCARD virtual resource_type_t get_resource_type() const = 0;
 
-    protected:
         AVALANCHE_RENDER_DEVICE_API AVALANCHE_NO_DISCARD detail::ResourceFlags& flags() const;
 
     private:
