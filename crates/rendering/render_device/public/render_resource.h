@@ -111,4 +111,10 @@ namespace avalanche::rendering {
         return new T(std::forward<Args>(args)...);
     }
 
+    template <class T>
+    requires std::derived_from<T, IResource>
+    void delete_resource(T* resource) {
+        delete resource;
+    }
+
 } // namespace avalanche::rendering

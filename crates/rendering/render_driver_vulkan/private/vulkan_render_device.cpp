@@ -48,7 +48,7 @@ namespace avalanche::rendering::vulkan {
             m_queued_delete_resource.pop();
             AVALANCHE_CHECK(nullptr != resource, "Trying to delete a nullptr resource");
             if (resource->flags().set_deleting()) {
-                delete resource;
+                delete_resource(resource);
             }
         }
     }
