@@ -30,7 +30,7 @@ namespace avalanche::rendering::vulkan {
         vector<VulkanWindow*> m_ticking_windows;
 
         RenderDevice* m_render_device = nullptr;
-        friend class RenderDevice;
+        friend class RenderDeviceImpl;
     };
 
     class VulkanWindow : public window::IWindow {

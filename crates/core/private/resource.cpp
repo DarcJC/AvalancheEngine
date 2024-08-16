@@ -29,8 +29,12 @@ namespace avalanche::core {
 
     bool ResourceHandle::operator==(const ResourceHandle &other) const { return other.m_value == m_value; }
 
-    bool ResourceHandle::operator!=(const ResourceHandle &other) const {
-        return !(other == *this);
+    bool ResourceHandle::operator!=(const ResourceHandle &other) const { return !(other == *this); }
+
+    bool ResourceHandle::is_valid() const { return *this != null_handle(); }
+
+    ResourceHandle::operator bool() const AVALANCHE_NOEXCEPT {
+        return is_valid();
     }
 
     ResourceHandle::ResourceHandle(const uint64_t in_value)

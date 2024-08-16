@@ -28,6 +28,9 @@ namespace avalanche::core {
         bool operator==(const ResourceHandle& other) const;
         bool operator!=(const ResourceHandle& other) const;
 
+        AVALANCHE_NO_DISCARD bool is_valid() const;
+        explicit operator bool() const AVALANCHE_NOEXCEPT ;
+
         /**
          * @brief Forbid new operator as I don't want a vtable.
          */

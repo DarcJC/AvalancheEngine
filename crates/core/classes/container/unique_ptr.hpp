@@ -67,7 +67,7 @@ namespace avalanche
         }
 
         template <typename U = T>
-        requires std::convertible_to<U, T>
+        requires std::convertible_to<T*, U*>
         operator unique_ptr<U>() {
             return unique_ptr<U>(release());
         }

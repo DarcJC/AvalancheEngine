@@ -15,6 +15,10 @@ namespace avalanche::rendering {
 
     namespace EResourceType {
         constexpr resource_type_t Unknown = 0;
+        // 0 - 65535 Is reserved
+        // 255 - 512 Is allocated to Vulkan Graphics API
+        // 512 - 768 Is allocated to DX12 Graphics API
+        // 65536 and lager is user namespace
     }
 
 

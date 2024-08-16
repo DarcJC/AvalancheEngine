@@ -4,13 +4,13 @@
 #include <vector>
 #include "vulkan_macro.h"
 #include "vulkan_context.h"
-#include "vulkan_render_device.h"
+#include "vulkan_render_device_impl.h"
 
 namespace avalanche::rendering::vulkan {
 
-    RenderDevice* to_vulkan_render_device(IRenderDevice* device) {
+    RenderDeviceImpl* to_vulkan_render_device(IRenderDevice* device) {
         if (device && device->get_graphics_api_type() == EGraphicsAPIType::Vulkan) {
-            return static_cast<RenderDevice*>(device);
+            return static_cast<RenderDeviceImpl*>(device);
         }
         return nullptr;
     }
@@ -73,7 +73,7 @@ namespace avalanche::rendering::vulkan {
     VulkanWindow::~VulkanWindow() { glfwDestroyWindow(m_window); }
 
     void VulkanWindow::create_swapchain() {
-        RenderDevice *render_device = to_vulkan_render_device(m_render_device);
+        RenderDeviceImpl* render_device = to_vulkan_render_device(m_render_device);
         vk::PhysicalDevice physical_device = render_device->get_context().physical_device();
 
         auto surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(m_surface);
