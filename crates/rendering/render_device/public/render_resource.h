@@ -1,15 +1,17 @@
 #pragma once
-#include "avalanche_render_device_export.h"
-#include <cstddef>
 #include <atomic>
+#include <concepts>
+#include <cstddef>
 #include <cstdint>
 #include <type_traits>
-#include <concepts>
-#include "polyfill.h"
+#include "avalanche_render_device_export.h"
 #include "logger.h"
+#include "polyfill.h"
 
 
 namespace avalanche::rendering {
+
+    class IRenderDevice;
 
     using resource_type_t = uint16_t;
 
@@ -51,16 +53,21 @@ namespace avalanche::rendering {
 
     class IResource {
     public:
+        explicit IResource(IRenderDevice& render_device);
+
         AVALANCHE_RENDER_DEVICE_API virtual ~IResource();
 
         AVALANCHE_RENDER_DEVICE_API AVALANCHE_NO_DISCARD virtual resource_type_t get_resource_type() const = 0;
 
         AVALANCHE_RENDER_DEVICE_API virtual bool is_committed() const;
 
+        AVALANCHE_RENDER_DEVICE_API virtual IRenderDevice& get_render_device();
+
         AVALANCHE_RENDER_DEVICE_API AVALANCHE_NO_DISCARD detail::ResourceFlags& flags();
 
-    private:
+    protected:
         mutable detail::ResourceFlags m_flag;
+        IRenderDevice& m_render_device;
     };
 
     template <resource_type_t ResourceType, typename BaseType = IResource>
@@ -68,7 +75,7 @@ namespace avalanche::rendering {
     public:
         using Super = BaseType;
 
-        ResourceCRTPBase() = default;
+        explicit ResourceCRTPBase(IRenderDevice& render_device) : BaseType(render_device) {}
 
         ResourceCRTPBase(const ResourceCRTPBase&) = delete;
         ResourceCRTPBase& operator=(const ResourceCRTPBase&) = delete;

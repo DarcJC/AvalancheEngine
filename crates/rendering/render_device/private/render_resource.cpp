@@ -3,10 +3,16 @@
 
 namespace avalanche::rendering {
 
+    IResource::IResource(IRenderDevice &render_device)
+        : m_render_device(render_device)
+    {}
+
     IResource::~IResource() = default;
 
-    bool IResource::is_committed() const {
-        return true;
+    bool IResource::is_committed() const { return true; }
+
+    IRenderDevice& IResource::get_render_device() {
+        return m_render_device;
     }
 
     detail::ResourceFlags& IResource::flags() {

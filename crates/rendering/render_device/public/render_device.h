@@ -34,7 +34,6 @@ namespace avalanche::rendering {
 
         virtual IResource* get_resource(const core::handle_t& handle) = 0;
         virtual core::handle_t register_resource(IResource* resource) = 0;
-        virtual void delete_resource(const core::handle_t& handle) = 0;
     };
 
     class AVALANCHE_RENDER_DEVICE_API IRenderDevice {
@@ -50,6 +49,8 @@ namespace avalanche::rendering {
 
         virtual void on_handle_created(const core::handle_t& handle);
         virtual void on_handle_free(const core::handle_t& handle);
+
+        virtual void clean_pending_delete_resource() = 0;
 
     protected:
         virtual void add_pending_delete_resource(IResource* resource);

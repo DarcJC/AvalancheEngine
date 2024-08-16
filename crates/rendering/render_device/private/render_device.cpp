@@ -40,14 +40,6 @@ namespace avalanche::rendering {
             return handle;
         }
 
-        void delete_resource(const core::handle_t& handle) override {
-            std::unique_lock<std::shared_mutex> lock(m_mutex);
-            if (IResource* resource = get_resource(handle)) {
-                m_resource.erase(handle);
-                m_render_device->add_pending_delete_resource(resource);
-            }
-        }
-
         ~RenderResourcePool() override {
             reset();
         }
@@ -103,7 +95,7 @@ namespace avalanche::rendering {
         auto* pool = get_resource_pool();
         if (IResource* resource = pool->get_resource(handle)) {
             if (resource->flags().decrease_rc() == 0) {
-                pool->delete_resource(handle);
+                add_pending_delete_resource(resource);
             }
         }
     }

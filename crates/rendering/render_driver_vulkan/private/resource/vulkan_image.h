@@ -16,12 +16,15 @@ namespace avalanche::rendering::vulkan {
         /**
          * @brief Create a nullptr handle and can create from descriptor later
          */
-        Image();
+        explicit Image(IRenderDevice& render_device);
         /**
          * @brief Create from an image handle which committed memory
          * @param image an image that has committed memory
+         * @param render_device
          */
-        explicit Image(vk::Image image);
+        Image(IRenderDevice& render_device, vk::Image image);
+
+        ~Image() override;
 
         // Begin IResource API
         bool is_committed() const override;
@@ -36,8 +39,10 @@ namespace avalanche::rendering::vulkan {
 
     class ImageView : public ResourceCRTPBase<EResourceType::VulkanImageView> {
     public:
-        ImageView();
-        explicit ImageView(vk::ImageView image_view);
+        explicit ImageView(IRenderDevice& render_device);
+        ImageView(IRenderDevice& render_device, vk::ImageView image_view);
+
+        ~ImageView() override;
 
     private:
         vk::ImageView m_image_view;

@@ -38,9 +38,25 @@ namespace avalanche::rendering::vulkan {
         core::ServerManager::get().unregister_server_and_delete<window::IWindowServer>();
     }
 
+    void RenderDeviceImpl::clean_pending_delete_resource() {
+        if (m_queued_delete_resource.empty()) {
+            return;
+        }
+        std::lock_guard lock(m_queue_mutex);
+        while (!m_queued_delete_resource.empty()) {
+            IResource* resource = m_queued_delete_resource.front();
+            m_queued_delete_resource.pop();
+            AVALANCHE_CHECK(nullptr != resource, "Trying to delete a nullptr resource");
+            if (resource->flags().set_deleting()) {
+                delete resource;
+            }
+        }
+    }
+
     void RenderDeviceImpl::add_pending_delete_resource(IResource *resource) {
         IRenderDevice::add_pending_delete_resource(resource);
-        AVALANCHE_TODO();
+        std::lock_guard lock(m_queue_mutex);
+        m_queued_delete_resource.push(resource);
     }
 
     Context &RenderDeviceImpl::get_context() const { return *m_context; }
