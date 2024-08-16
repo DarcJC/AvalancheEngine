@@ -57,13 +57,13 @@ namespace avalanche::rendering {
 
         AVALANCHE_RENDER_DEVICE_API virtual ~IResource();
 
-        AVALANCHE_RENDER_DEVICE_API AVALANCHE_NO_DISCARD virtual resource_type_t get_resource_type() const = 0;
+        AVALANCHE_RENDER_DEVICE_API virtual resource_type_t get_resource_type() const = 0;
 
         AVALANCHE_RENDER_DEVICE_API virtual bool is_committed() const;
 
         AVALANCHE_RENDER_DEVICE_API virtual IRenderDevice& get_render_device();
 
-        AVALANCHE_RENDER_DEVICE_API AVALANCHE_NO_DISCARD detail::ResourceFlags& flags();
+        AVALANCHE_NO_DISCARD AVALANCHE_RENDER_DEVICE_API detail::ResourceFlags& flags();
 
     protected:
         mutable detail::ResourceFlags m_flag;

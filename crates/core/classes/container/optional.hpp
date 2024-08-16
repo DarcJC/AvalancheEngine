@@ -19,7 +19,7 @@ namespace avalanche {
     private:
         allocator_impl allocator{};
 
-        alignas(value_type) void* m_data[sizeof(value_type)] {};
+        alignas(std::max_align_t) void* m_data[sizeof(value_type)] {};
         bool m_has_value = false;
 
         value_pointer_type data() {

@@ -101,8 +101,8 @@ namespace avalanche {
         vector_base(vector_base&& other) AVALANCHE_NOEXCEPT
             : m_allocator(std::move(other.m_allocator))
             , m_data(other.m_data)
-            , m_length(other.m_length)
             , m_capacity(other.m_capacity)
+            , m_length(other.m_length)
         {
             other.m_data = nullptr;
             other.m_length = 0;
