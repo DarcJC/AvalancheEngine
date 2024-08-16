@@ -16,31 +16,38 @@ namespace avalanche
         template <typename U = T>
         explicit unique_ptr(U* p) : ptr(p) {}
 
-        unique_ptr(const unique_ptr&) = delete;
-        unique_ptr& operator=(const unique_ptr&) = delete;
+        template <typename U = T>
+        requires std::copy_constructible<T> && std::convertible_to<U*, T*>
+        unique_ptr(const unique_ptr<U>& other)
+            : unique_ptr(std::move(other.template clone<T>()))
+        {}
 
-        unique_ptr(unique_ptr&& moving) noexcept : ptr(moving.ptr) {
-            moving.ptr = nullptr;
+        template <typename U = T>
+        requires std::copy_constructible<T> && std::convertible_to<U*, T*>
+        unique_ptr& operator=(const unique_ptr<U>& other) {
+            if (static_cast<void *>(this) != static_cast<void *>(&other)) {
+                reset();
+                unique_ptr<T> temp = other.template clone<T>();
+                ptr = std::exchange(temp.ptr, nullptr);
+            }
+            return *this;
         }
 
         template <typename U = T>
-        explicit unique_ptr(unique_ptr<U>&& other) noexcept {
-            ptr = other.ptr;
-            other.ptr = nullptr;
-        }
+        requires std::convertible_to<U*, T*>
+        unique_ptr(unique_ptr<U>&& moving) noexcept : ptr(moving.release()) {}
 
         template <typename U = T>
+        requires std::convertible_to<U*, T*>
         unique_ptr<T>& operator=(unique_ptr<U>&& moving) noexcept {
-            if ((void*)this != (void*)&moving) {
-                delete ptr;
-                ptr = moving.ptr;
-                moving.ptr = nullptr;
+            if (static_cast<void *>(this) != static_cast<void *>(&moving)) {
+                reset(moving.release());
             }
             return *this;
         }
 
         ~unique_ptr() {
-            delete ptr;
+            reset();
         }
 
         T& operator*() const { return *ptr; }
@@ -72,7 +79,23 @@ namespace avalanche
             return unique_ptr<U>(release());
         }
 
+        template <typename U = T>
+        bool operator==(const unique_ptr<U>& other) {
+            return static_cast<void*>(ptr) == static_cast<void*>(other.ptr);
+        }
+
+        template <typename U = T>
+        requires std::copy_constructible<T> && std::convertible_to<T*, U*>
+        AVALANCHE_NO_DISCARD unique_ptr<U> clone() const {
+            U* u = new T(*ptr);
+            return unique_ptr<U>{u};
+        }
+
+    private:
         T* ptr;
+
+        template <typename>
+        friend class unique_ptr;
     };
 
     template <typename T, typename... Args>

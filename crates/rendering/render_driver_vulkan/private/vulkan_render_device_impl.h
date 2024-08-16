@@ -9,6 +9,7 @@ namespace avalanche::rendering::vulkan {
     class RenderDeviceImpl : public RenderDevice {
     public:
         explicit RenderDeviceImpl(const DeviceSettings &settings);
+        ~RenderDeviceImpl() override;
 
         // Begin IRenderDevice interface
         EGraphicsAPIType get_graphics_api_type() override;
@@ -18,6 +19,11 @@ namespace avalanche::rendering::vulkan {
         // End IRenderDevice interface
 
         handle_t register_external_image(const vk::Image& image);
+
+        // Begin handle delegates
+        void on_handle_created(const handle_t &handle);
+        void on_handle_free(const handle_t& handle);
+        // End handle delegates
 
         AVALANCHE_NO_DISCARD Context& get_context() const;
 

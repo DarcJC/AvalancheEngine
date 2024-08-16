@@ -15,7 +15,7 @@ namespace avalanche {
         }
 
         void remove(const DelegateType& delegate) {
-            delegates.erase(std::remove(delegates.begin(), delegates.end(), delegate), delegates.end());
+            delegates.remove(delegate);
         }
 
         void invoke(Args... args) {
