@@ -11,14 +11,12 @@
 
 namespace avalanche::rendering {
 
-    using resource_type_t = uint32_t;
+    using resource_type_t = uint16_t;
 
     namespace EResourceType {
         constexpr resource_type_t Unknown = 0;
-        // 0 - 65535 Is reserved
         // 255 - 512 Is allocated to Vulkan Graphics API
         // 512 - 768 Is allocated to DX12 Graphics API
-        // 65536 and lager is user namespace
     }
 
 
@@ -57,6 +55,8 @@ namespace avalanche::rendering {
 
         AVALANCHE_RENDER_DEVICE_API AVALANCHE_NO_DISCARD virtual resource_type_t get_resource_type() const = 0;
 
+        AVALANCHE_RENDER_DEVICE_API virtual bool is_committed() const;
+
         AVALANCHE_RENDER_DEVICE_API AVALANCHE_NO_DISCARD detail::ResourceFlags& flags();
 
     private:
@@ -64,9 +64,16 @@ namespace avalanche::rendering {
     };
 
     template <resource_type_t ResourceType, typename BaseType = IResource>
-    class ResourceCTRPBase : public BaseType {
+    class ResourceCRTPBase : public BaseType {
     public:
         using Super = BaseType;
+
+        ResourceCRTPBase() = default;
+
+        ResourceCRTPBase(const ResourceCRTPBase&) = delete;
+        ResourceCRTPBase& operator=(const ResourceCRTPBase&) = delete;
+        ResourceCRTPBase(ResourceCRTPBase&&) = delete;
+        ResourceCRTPBase& operator=(ResourceCRTPBase&&) = delete;
 
         static constexpr resource_type_t resource_type = ResourceType;
 
@@ -89,6 +96,12 @@ namespace avalanche::rendering {
             }
         }
         return nullptr;
+    }
+
+    template <class T, typename... Args>
+    requires std::derived_from<T, IResource> && std::constructible_from<T, Args...>
+    T* construct_resource(Args&&... args) {
+        return new T(std::forward<Args>(args)...);
     }
 
 } // namespace avalanche::rendering

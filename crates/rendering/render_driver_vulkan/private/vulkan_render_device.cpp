@@ -2,6 +2,7 @@
 #include "vulkan_render_device_impl.h"
 #include "vulkan_window.h"
 #include "vulkan_context.h"
+#include "resource/vulkan_resource.h"
 
 #include <mutex>
 #include <render_resource.h>
@@ -14,15 +15,11 @@ namespace avalanche::rendering::vulkan {
         if (settings.required_features.display) {
             RenderDeviceImpl::enable_display_support();
         }
-        core::HandleCreateDelegate.add({&RenderDeviceImpl::on_handle_created, *this});
-        core::HandleFreeDelegate.add({&RenderDeviceImpl::on_handle_free, *this});
     }
 
     RenderDeviceImpl::~RenderDeviceImpl() {
-        core::HandleFreeDelegate.remove({&RenderDeviceImpl::on_handle_free, *this});
-        core::HandleCreateDelegate.remove({&RenderDeviceImpl::on_handle_created, *this});
         if (m_settings.required_features.display) {
-            IRenderDevice::disable_display_support();
+            RenderDeviceImpl::disable_display_support();
         }
     }
 
@@ -33,29 +30,17 @@ namespace avalanche::rendering::vulkan {
     void RenderDeviceImpl::enable_display_support() {
         AVALANCHE_CHECK_RUNTIME(core::ServerManager::get().get_server<VulkanWindowServer>() == nullptr,
                                 "Only one RenderDevice allow to enable display support.");
-        auto* window_server = new VulkanWindowServer(*this);
+        auto *window_server = new VulkanWindowServer(*this);
         core::ServerManager::get().register_server(window_server);
     }
 
-    void RenderDeviceImpl::add_pending_delete_resource(IResource *resource) { AVALANCHE_TODO(); }
+    void RenderDeviceImpl::disable_display_support() {
+        core::ServerManager::get().unregister_server_and_delete<window::IWindowServer>();
+    }
 
-    handle_t RenderDeviceImpl::register_external_image(const vk::Image &image) {
+    void RenderDeviceImpl::add_pending_delete_resource(IResource *resource) {
+        IRenderDevice::add_pending_delete_resource(resource);
         AVALANCHE_TODO();
-        return handle_t::null_handle();
-    }
-
-    void RenderDeviceImpl::on_handle_created(const handle_t& handle) {
-        if (IResource* resource = get_resource_pool()->get_resource(handle)) {
-            resource->flags().increase_rc();
-        }
-    }
-
-    void RenderDeviceImpl::on_handle_free(const handle_t& handle) {
-        if (IResource* resource = get_resource_pool()->get_resource(handle)) {
-            if (resource->flags().decrease_rc() == 0) {
-                add_pending_delete_resource(resource);
-            }
-        }
     }
 
     Context &RenderDeviceImpl::get_context() const { return *m_context; }

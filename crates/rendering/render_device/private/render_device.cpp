@@ -6,8 +6,9 @@
 #include <manager/server_manager.h>
 #include <ranges>
 #include <unordered_map>
+#include <shared_mutex>
 
-#include "../../window_server/public/window_server.h"
+
 #include "render_resource.h"
 #include "resource.h"
 
@@ -23,6 +24,7 @@ namespace avalanche::rendering {
         }
 
         IResource* get_resource(const core::handle_t &handle) override {
+            std::shared_lock<std::shared_mutex> lock(m_mutex);
             if (const auto it = m_resource.find(handle); it != m_resource.end()) {
                 return it->second;
             }
@@ -30,6 +32,7 @@ namespace avalanche::rendering {
         }
 
         handle_t register_resource(IResource *resource) override {
+            std::unique_lock<std::shared_mutex> lock(m_mutex);
             AVALANCHE_CHECK(nullptr != resource, "Invalid resource");
             AVALANCHE_CHECK(is_resource_exist(resource), "Resource is already exist");
             handle_t handle = handle_t::new_handle();
@@ -37,11 +40,20 @@ namespace avalanche::rendering {
             return handle;
         }
 
+        void delete_resource(const core::handle_t& handle) override {
+            std::unique_lock<std::shared_mutex> lock(m_mutex);
+            if (IResource* resource = get_resource(handle)) {
+                m_resource.erase(handle);
+                m_render_device->add_pending_delete_resource(resource);
+            }
+        }
+
         ~RenderResourcePool() override {
             reset();
         }
 
         void reset() {
+            std::unique_lock<std::shared_mutex> lock(m_mutex);
             for (const auto &res: m_resource | std::views::values) {
                 m_render_device->add_pending_delete_resource(res);
             }
@@ -53,6 +65,7 @@ namespace avalanche::rendering {
             return std::ranges::find(view, resource) != view.end();
         }
     private:
+        std::shared_mutex m_mutex{};
         std::unordered_map<handle_t, IResource*> m_resource;
 
         IRenderDevice* m_render_device;
@@ -69,13 +82,30 @@ namespace avalanche::rendering {
     IRenderResourcePool::~IRenderResourcePool() = default;
 
     IRenderDevice::IRenderDevice()
-        : m_render_resource_pool(IRenderResourcePool::new_pool(this))
-    {}
+        : m_render_resource_pool(IRenderResourcePool::new_pool(this)) {
+        core::HandleCreateDelegate.add({&IRenderDevice::on_handle_created, *this});
+        core::HandleFreeDelegate.add({&IRenderDevice::on_handle_free, *this});
+    }
 
-    IRenderDevice::~IRenderDevice() { delete m_render_resource_pool; }
+    IRenderDevice::~IRenderDevice() {
+        core::HandleFreeDelegate.remove({&IRenderDevice::on_handle_free, *this});
+        core::HandleCreateDelegate.remove({&IRenderDevice::on_handle_created, *this});
+        RenderResourcePool::delete_pool(m_render_resource_pool);
+    }
 
-    void IRenderDevice::disable_display_support() {
-        core::ServerManager::get().unregister_server_and_delete<window::IWindowServer>();
+    void IRenderDevice::on_handle_created(const core::handle_t &handle) {
+        if (IResource* resource = get_resource_pool()->get_resource(handle)) {
+            resource->flags().increase_rc();
+        }
+    }
+
+    void IRenderDevice::on_handle_free(const core::handle_t &handle) {
+        auto* pool = get_resource_pool();
+        if (IResource* resource = pool->get_resource(handle)) {
+            if (resource->flags().decrease_rc() == 0) {
+                pool->delete_resource(handle);
+            }
+        }
     }
 
     void IRenderDevice::add_pending_delete_resource(IResource *resource) { resource->flags().mark_for_delete(); }

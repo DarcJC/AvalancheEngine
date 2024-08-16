@@ -5,6 +5,10 @@ namespace avalanche::rendering {
 
     IResource::~IResource() = default;
 
+    bool IResource::is_committed() const {
+        return true;
+    }
+
     detail::ResourceFlags& IResource::flags() {
         return m_flag;
     }
