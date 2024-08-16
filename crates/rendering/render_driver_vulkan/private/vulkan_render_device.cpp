@@ -45,7 +45,7 @@ namespace avalanche::rendering::vulkan {
     }
 
     void RenderDeviceImpl::on_handle_created(const handle_t& handle) {
-        if (const IResource* resource = get_resource_pool()->get_resource(handle)) {
+        if (IResource* resource = get_resource_pool()->get_resource(handle)) {
             resource->flags().increase_rc();
         }
     }

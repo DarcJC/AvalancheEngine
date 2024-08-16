@@ -48,7 +48,7 @@ namespace avalanche::rendering {
 
     protected:
         virtual void add_pending_delete_resource(IResource* resource);
-        AVALANCHE_NO_DISCARD IRenderResourcePool* get_resource_pool() const;
+        AVALANCHE_NO_DISCARD IRenderResourcePool* get_resource_pool();
 
         friend class RenderResourcePool;
 

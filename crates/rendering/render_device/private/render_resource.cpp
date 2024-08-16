@@ -5,7 +5,7 @@ namespace avalanche::rendering {
 
     IResource::~IResource() = default;
 
-    detail::ResourceFlags& IResource::flags() const {
+    detail::ResourceFlags& IResource::flags() {
         return m_flag;
     }
 

@@ -57,7 +57,7 @@ namespace avalanche::rendering {
 
         AVALANCHE_RENDER_DEVICE_API AVALANCHE_NO_DISCARD virtual resource_type_t get_resource_type() const = 0;
 
-        AVALANCHE_RENDER_DEVICE_API AVALANCHE_NO_DISCARD detail::ResourceFlags& flags() const;
+        AVALANCHE_RENDER_DEVICE_API AVALANCHE_NO_DISCARD detail::ResourceFlags& flags();
 
     private:
         mutable detail::ResourceFlags m_flag;

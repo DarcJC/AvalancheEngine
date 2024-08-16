@@ -75,7 +75,7 @@ namespace avalanche::rendering {
 
     void IRenderDevice::add_pending_delete_resource(IResource *resource) { resource->flags().mark_for_delete(); }
 
-    IRenderResourcePool* IRenderDevice::get_resource_pool() const {
+    IRenderResourcePool* IRenderDevice::get_resource_pool() {
         return m_render_resource_pool;
     }
 
