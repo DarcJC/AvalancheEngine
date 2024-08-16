@@ -3,8 +3,11 @@
 //
 #include "render_device.h"
 
+#include <manager/server_manager.h>
 #include <ranges>
 #include <unordered_map>
+
+#include "../../window_server/public/window_server.h"
 #include "render_resource.h"
 #include "resource.h"
 
@@ -69,8 +72,10 @@ namespace avalanche::rendering {
         : m_render_resource_pool(IRenderResourcePool::new_pool(this))
     {}
 
-    IRenderDevice::~IRenderDevice() {
-        delete m_render_resource_pool;
+    IRenderDevice::~IRenderDevice() { delete m_render_resource_pool; }
+
+    void IRenderDevice::disable_display_support() {
+        core::ServerManager::get().unregister_server_and_delete<window::IWindowServer>();
     }
 
     void IRenderDevice::add_pending_delete_resource(IResource *resource) { resource->flags().mark_for_delete(); }

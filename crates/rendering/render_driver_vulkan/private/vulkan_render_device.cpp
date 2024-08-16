@@ -21,6 +21,9 @@ namespace avalanche::rendering::vulkan {
     RenderDeviceImpl::~RenderDeviceImpl() {
         core::HandleFreeDelegate.remove({&RenderDeviceImpl::on_handle_free, *this});
         core::HandleCreateDelegate.remove({&RenderDeviceImpl::on_handle_created, *this});
+        if (m_settings.required_features.display) {
+            IRenderDevice::disable_display_support();
+        }
     }
 
     EGraphicsAPIType RenderDeviceImpl::get_graphics_api_type() { return EGraphicsAPIType::Vulkan; }
@@ -30,11 +33,8 @@ namespace avalanche::rendering::vulkan {
     void RenderDeviceImpl::enable_display_support() {
         AVALANCHE_CHECK_RUNTIME(core::ServerManager::get().get_server<VulkanWindowServer>() == nullptr,
                                 "Only one RenderDevice allow to enable display support.");
-        static std::once_flag once;
-        std::call_once(once, [this]() {
-            auto *window_server = new VulkanWindowServer(*this);
-            core::ServerManager::get().register_server(window_server);
-        });
+        auto* window_server = new VulkanWindowServer(*this);
+        core::ServerManager::get().register_server(window_server);
     }
 
     void RenderDeviceImpl::add_pending_delete_resource(IResource *resource) { AVALANCHE_TODO(); }

@@ -45,6 +45,7 @@ namespace avalanche::rendering {
 
         virtual void wait_for_device_idle() = 0;
         virtual void enable_display_support() = 0;
+        virtual void disable_display_support();
 
     protected:
         virtual void add_pending_delete_resource(IResource* resource);
