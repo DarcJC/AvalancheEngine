@@ -16,15 +16,15 @@ namespace avalanche::rendering::vulkan {
         const auto get_type_prefix_name = [message_type] () -> string {
             switch (message_type) {
                 case VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT:
-                    return "GENERAL";
+                    return "General";
                 case VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT:
-                    return "VALIDATION";
+                    return "Validation";
                 case VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT:
-                    return "PERFORMANCE";
+                    return "Performance";
                 case VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT:
-                    return "DEVICE_ADRRESS_BINDING";
+                    return "Device_Address_Binding";
                 default:
-                    return "UNKNOWN";
+                    return "Unknown";
             }
         };
 
