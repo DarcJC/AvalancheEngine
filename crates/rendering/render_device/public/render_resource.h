@@ -61,6 +61,10 @@ namespace avalanche::rendering {
 
         AVALANCHE_RENDER_DEVICE_API virtual bool is_committed() const;
 
+        AVALANCHE_RENDER_DEVICE_API virtual bool is_valid() const;
+
+        AVALANCHE_RENDER_DEVICE_API virtual bool is_external() const;
+
         AVALANCHE_RENDER_DEVICE_API virtual IRenderDevice& get_render_device();
 
         AVALANCHE_NO_DISCARD AVALANCHE_RENDER_DEVICE_API detail::ResourceFlags& flags();
@@ -86,6 +90,12 @@ namespace avalanche::rendering {
 
         AVALANCHE_NO_DISCARD resource_type_t get_resource_type() const override {
             return resource_type;
+        }
+
+        template <typename DeviceType>
+        DeviceType& render_device() {
+            AVALANCHE_CHECK(this->get_render_device().get_graphics_api_type() == DeviceType::graphics_api_type, "Device doesn't corresponding to target type");
+            return static_cast<DeviceType&>(this->get_render_device());
         }
     };
 

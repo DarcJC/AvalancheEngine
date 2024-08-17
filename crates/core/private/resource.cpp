@@ -52,12 +52,14 @@ namespace avalanche::core {
 
     bool ResourceHandle::operator!=(const ResourceHandle &other) const { return !(other == *this); }
 
-    bool ResourceHandle::is_valid() const { return *this != null_handle(); }
+    bool ResourceHandle::is_valid() const { return m_value != 0; }
 
     ResourceHandle::operator bool() const AVALANCHE_NOEXCEPT { return is_valid(); }
 
     void ResourceHandle::reset() {
-        HandleFreeDelegate.invoke(*this);
+        if (is_valid()) {
+            HandleFreeDelegate.invoke(*this);
+        }
         m_value = 0;
     }
 

@@ -59,6 +59,10 @@ namespace avalanche::rendering::vulkan {
         m_queued_delete_resource.push(resource);
     }
 
+    handle_t RenderDeviceImpl::create_image_view(const ImageViewDesc &desc) {
+        return create_resource<ImageView>(desc);
+    }
+
     Context &RenderDeviceImpl::get_context() const { return *m_context; }
 
     unique_ptr<RenderDevice> RenderDevice::create_instance(const DeviceSettings& settings) {

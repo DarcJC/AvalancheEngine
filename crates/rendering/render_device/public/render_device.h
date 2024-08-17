@@ -6,9 +6,12 @@
 
 namespace avalanche::rendering {
 
+    using core::handle_t;
+
     class IRenderGraph;
     class IResource;
     class IRenderDevice;
+    struct ImageViewDesc;
 
     struct DeviceFeatures {
         bool ray_tracing = true;
@@ -51,6 +54,8 @@ namespace avalanche::rendering {
         virtual void on_handle_free(const core::handle_t& handle);
 
         virtual void clean_pending_delete_resource() = 0;
+
+        virtual handle_t create_image_view(const ImageViewDesc& desc) = 0;
 
     protected:
         virtual void add_pending_delete_resource(IResource* resource);

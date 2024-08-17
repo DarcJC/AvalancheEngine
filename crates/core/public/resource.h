@@ -10,7 +10,7 @@
 
 namespace avalanche::core {
 
-    class AVALANCHE_CORE_API ResourceHandle {
+    class AVALANCHE_CORE_API ResourceHandle final {
     public:
         AVALANCHE_NO_DISCARD static ResourceHandle new_handle(bool trigger_delegate = true);
         AVALANCHE_NO_DISCARD static ResourceHandle null_handle();
@@ -32,11 +32,6 @@ namespace avalanche::core {
         explicit operator bool() const AVALANCHE_NOEXCEPT ;
 
         void reset();
-
-        /**
-         * @brief Forbid new operator as I don't want a vtable.
-         */
-        static void* operator new(size_t) = delete;
 
     private:
         explicit ResourceHandle(uint64_t in_value, bool trigger_delegate = true);

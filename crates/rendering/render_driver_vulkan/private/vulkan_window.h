@@ -2,11 +2,14 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <cstdint>
+#include <mutex>
 #include "container/vector.hpp"
 #include "window_server.h"
 #include "vulkan/vulkan.hpp"
 
 namespace avalanche::rendering::vulkan {
+
+    using core::handle_t;
 
     class RenderDevice;
     class VulkanWindow;
@@ -39,12 +42,19 @@ namespace avalanche::rendering::vulkan {
         ~VulkanWindow() override;
 
     protected:
+        /**
+         * @brief Create / Recreate swapchain.
+         */
         void create_swapchain();
-        void clean_swapchain_images();
+
+        void clean_old_resource();
 
     private:
         vk::SurfaceKHR m_surface = nullptr;
         vk::SwapchainKHR m_swapchain = nullptr;
+        vector<handle_t> m_image_handles{};
+        vector<handle_t> m_image_view_handles{};
+        std::mutex m_window_lock{};
 
         friend class VulkanWindowServer;
     };

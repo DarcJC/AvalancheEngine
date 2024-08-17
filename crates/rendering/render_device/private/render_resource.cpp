@@ -11,7 +11,13 @@ namespace avalanche::rendering {
 
     bool IResource::is_committed() const { return true; }
 
-    IRenderDevice& IResource::get_render_device() {
+    bool IResource::is_valid() const { return false; }
+
+    bool IResource::is_external() const {
+        return false;
+    }
+
+    IRenderDevice & IResource::get_render_device() {
         return m_render_device;
     }
 

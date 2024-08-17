@@ -34,9 +34,10 @@ namespace avalanche::rendering {
         handle_t register_resource(IResource *resource) override {
             std::unique_lock<std::shared_mutex> lock(m_mutex);
             AVALANCHE_CHECK(nullptr != resource, "Invalid resource");
-            AVALANCHE_CHECK(is_resource_exist(resource), "Resource is already exist");
-            handle_t handle = handle_t::new_handle();
-            m_resource[handle] = resource;
+            AVALANCHE_CHECK(!is_resource_exist(resource), "Resource is already exist");
+            handle_t handle = handle_t::new_handle(false);
+            resource->flags().increase_rc();
+            m_resource[std::move(handle)] = resource;
             return handle;
         }
 

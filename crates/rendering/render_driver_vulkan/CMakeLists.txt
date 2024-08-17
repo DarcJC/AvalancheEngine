@@ -2,7 +2,7 @@
 set(AVALANCHE_RENDER_DERIVER_VULKAN_SOURCE
         "private/vulkan_init.cpp" "private/vulkan_context.cpp" "private/vulkan_debug.cpp"
         "private/vulkan_render_device.cpp" "private/vulkan_window.cpp"
-        "private/resource/vulkan_image.cpp"
+        "private/resource/vulkan_image.cpp" "private/resource/vulkan_format.cpp"
 )
 
 avalanche_target(

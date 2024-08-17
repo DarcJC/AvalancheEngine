@@ -5,6 +5,7 @@
 #include "vulkan_macro.h"
 #include "vulkan_context.h"
 #include "vulkan_render_device_impl.h"
+#include "resource/vulkan_resource.h"
 
 namespace avalanche::rendering::vulkan {
 
@@ -70,10 +71,15 @@ namespace avalanche::rendering::vulkan {
         create_swapchain();
     }
 
-    VulkanWindow::~VulkanWindow() { glfwDestroyWindow(m_window); }
+    VulkanWindow::~VulkanWindow() {
+        std::lock_guard lock(m_window_lock);
+        glfwDestroyWindow(m_window);
+    }
 
     void VulkanWindow::create_swapchain() {
-        RenderDeviceImpl* render_device = to_vulkan_render_device(m_render_device);
+        std::lock_guard lock(m_window_lock);
+        RenderDeviceImpl *render_device = to_vulkan_render_device(m_render_device);
+        AVALANCHE_CHECK(nullptr != render_device, "Invalid render device");
         vk::PhysicalDevice physical_device = render_device->get_context().physical_device();
 
         auto surface_capabilities = physical_device.getSurfaceCapabilitiesKHR(m_surface);
@@ -139,12 +145,57 @@ namespace avalanche::rendering::vulkan {
                 .setOldSwapchain(nullptr);
 
         if (m_swapchain) {
+            clean_old_resource();
             swapchain_create_info.setOldSwapchain(m_swapchain);
         }
 
+        // Create or recreate swapchain
+        vk::SwapchainKHR old_swapchain = m_swapchain;
         m_swapchain = render_device->get_context().device().createSwapchainKHR(swapchain_create_info);
+
+        // Destroy old swapchain
+        render_device->get_context().device().destroySwapchainKHR(old_swapchain);
+
+        // Create view for swapchain images
+        const auto swapchain_image = render_device->get_context().device().getSwapchainImagesKHR(m_swapchain);
+        image_count = swapchain_image.size();
+        m_image_handles.ensure_capacity(image_count);
+        m_image_view_handles.ensure_capacity(image_count);
+
+        for (size_t i = 0; i < image_count; ++i) {
+            handle_t handle = render_device->register_external_resource<vk::Image, Image>(swapchain_image[i], true);
+            m_image_handles.emplace_back(std::move(handle));
+            vk::ImageViewCreateInfo create_info{};
+            create_info
+                .setImage(swapchain_image[i])
+                .setViewType(vk::ImageViewType::e2D)
+                .setFormat(surface_format.format)
+                .setComponents(vk::ComponentSwizzle::eIdentity)
+                .setSubresourceRange(vk::ImageSubresourceRange {
+                    vk::ImageAspectFlagBits::eColor,
+                    0,
+                    1,
+                    0,
+                    1
+                })
+            ;
+            vk::ImageView view = render_device->get_context().device().createImageView(create_info);
+            handle_t view_handle = render_device->register_external_resource<vk::ImageView, ImageView>(view, true);
+            m_image_view_handles.add_item(view_handle);
+        }
     }
 
-    void VulkanWindow::clean_swapchain_images() {
+    void VulkanWindow::clean_old_resource() {
+        RenderDeviceImpl *render_device = to_vulkan_render_device(m_render_device);
+        // Free image view managed by us
+        for (const auto& handle : m_image_view_handles) {
+            const vk::ImageView& view = render_device->get_resource_by_handle<ImageView>(handle)->m_image_view;
+            render_device->get_context().device().destroyImageView(view);
+        }
+
+        // Clean handles
+        m_image_view_handles.clear();
+        m_image_handles.clear();
     }
+
 } // namespace avalanche::rendering::vulkan

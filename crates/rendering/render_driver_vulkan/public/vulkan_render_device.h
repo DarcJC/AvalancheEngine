@@ -10,6 +10,8 @@ namespace avalanche::rendering::vulkan {
 
     class AVALANCHE_RENDER_DRIVER_VULKAN_API RenderDevice : public IRenderDevice {
     public:
+        static constexpr auto graphics_api_type = EGraphicsAPIType::Vulkan;
+
         static unique_ptr<RenderDevice> create_instance(const DeviceSettings& settings);
     };
 
