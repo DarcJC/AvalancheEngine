@@ -10,7 +10,7 @@ namespace avalanche::core {
         return ResourceHandle{counter.fetch_add(1, std::memory_order_acq_rel), trigger_delegate};
     }
 
-    ResourceHandle ResourceHandle::null_handle() { return ResourceHandle{0}; }
+    ResourceHandle ResourceHandle::null_handle() { return ResourceHandle{0, false}; }
 
     ResourceHandle::ResourceHandle(const ResourceHandle &other) AVALANCHE_NOEXCEPT
         : m_value(other.m_value)

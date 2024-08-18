@@ -41,6 +41,8 @@ namespace avalanche::window {
             }
             glfwSetWindowShouldClose(m_window, 0);
         }
+        // Queue frame to render
+        AVALANCHE_TODO();
     }
 
     GLFWwindow *IWindow::get_wrapper_handle() const { return m_window; }
