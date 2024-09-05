@@ -6,14 +6,14 @@
 
 namespace avalanche::rendering::EResourceType {
     constexpr resource_type_t VulkanSemaphore = 258;
+    constexpr resource_type_t VulkanFence = 259;
 } // namespace EResourceType
 
 namespace avalanche::rendering::vulkan {
 
     class Semaphore : public ResourceCRTPBase<EResourceType::VulkanSemaphore> {
     public:
-        explicit Semaphore(IRenderDevice& render_device);
-        Semaphore(IRenderDevice& render_device, vk::Semaphore semaphore, bool is_external = false);
+        explicit Semaphore(IRenderDevice& render_device, vk::Semaphore semaphore = nullptr);
 
         // Begin IResource API
         bool is_external() const override;
@@ -21,7 +21,18 @@ namespace avalanche::rendering::vulkan {
 
     private:
         vk::Semaphore m_semaphore;
-        bool m_is_external = false;
+    };
+
+    class Fence : public ResourceCRTPBase<EResourceType::VulkanFence> {
+    public:
+        explicit Fence(IRenderDevice& render_device, vk::Fence fence = nullptr);
+
+        // Begin IResource API
+        bool is_external() const override;
+        // End IResource API
+
+    private:
+        vk::Fence m_fence;
     };
 
 } // namespace avalanche::rendering::vulkan

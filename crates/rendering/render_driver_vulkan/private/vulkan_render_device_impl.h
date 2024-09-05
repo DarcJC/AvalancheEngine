@@ -34,29 +34,6 @@ namespace avalanche::rendering::vulkan {
             return get_resource_pool()->register_resource(construct_resource<ResourceType>(*this, vulkan_handle, std::forward<Args>(args)...));
         }
 
-        template <typename ResourceType>
-        requires std::derived_from<ResourceType, IResource>
-        handle_t create_uninitialized_resource() {
-            return get_resource_pool()->register_resource(construct_resource<ResourceType>(*this));
-        }
-
-        template <typename ResourceType, typename DescType, typename... Args>
-        requires std::derived_from<ResourceType, IResource>
-        handle_t create_resource(const DescType& desc, Args&&... args) {
-            ResourceType* resource = construct_resource<ResourceType>(*this);
-            resource->initialize(desc, std::forward<Args>(args)...);
-            return get_resource_pool()->register_resource(resource);
-        }
-
-        template <typename ResourceType>
-        requires std::derived_from<ResourceType, IResource>
-        ResourceType* get_resource_by_handle(const handle_t& handle) {
-            IResource* resource = get_resource_pool()->get_resource(handle);
-            AVALANCHE_CHECK(resource->get_resource_type() == ResourceType::resource_type, "");
-            return static_cast<ResourceType*>(resource);
-        }
-
-
         AVALANCHE_NO_DISCARD Context& get_context() const;
 
     private:

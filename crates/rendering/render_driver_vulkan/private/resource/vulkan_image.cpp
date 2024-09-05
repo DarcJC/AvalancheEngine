@@ -44,7 +44,7 @@ namespace avalanche::rendering::vulkan {
 
     bool ImageView::is_external() const { return m_is_external; }
 
-    void ImageView::initialize(const ImageViewDesc &desc) {
+    void ImageView::initialize(const ImageViewDesc& desc) {
         AVALANCHE_CHECK_RUNTIME(!m_image_view, "Double initialization isn't allowed.");
         AVALANCHE_CHECK(desc.image, "Invalid image handle");
         auto& device = render_device<RenderDeviceImpl>();
