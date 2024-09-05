@@ -3,9 +3,7 @@
 
 namespace avalanche::rendering {
 
-    class IRenderGraph {
-    public:
-        virtual ~IRenderGraph();
+    class RenderPassEncoder {
     };
 
-}
+} // avalanche::rendering

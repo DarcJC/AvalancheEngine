@@ -97,6 +97,12 @@ namespace avalanche::rendering {
             AVALANCHE_CHECK(this->get_render_device().get_graphics_api_type() == DeviceType::graphics_api_type, "Device doesn't corresponding to target type");
             return static_cast<DeviceType&>(this->get_render_device());
         }
+
+        template <typename DeviceType>
+        const DeviceType& render_device() const {
+            AVALANCHE_CHECK(this->get_render_device().get_graphics_api_type() == DeviceType::graphics_api_type, "Device doesn't corresponding to target type");
+            return static_cast<DeviceType&>(this->get_render_device());
+        }
     };
 
     template <typename T>

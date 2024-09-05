@@ -14,6 +14,7 @@ namespace avalanche::rendering::vulkan {
     class Semaphore : public ResourceCRTPBase<EResourceType::VulkanSemaphore> {
     public:
         explicit Semaphore(IRenderDevice& render_device, vk::Semaphore semaphore = nullptr);
+        ~Semaphore() override;
 
         // Begin IResource API
         bool is_external() const override;
@@ -26,6 +27,7 @@ namespace avalanche::rendering::vulkan {
     class Fence : public ResourceCRTPBase<EResourceType::VulkanFence> {
     public:
         explicit Fence(IRenderDevice& render_device, vk::Fence fence = nullptr);
+        ~Fence() override;
 
         // Begin IResource API
         bool is_external() const override;

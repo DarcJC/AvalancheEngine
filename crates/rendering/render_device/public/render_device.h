@@ -5,6 +5,8 @@
 #include "render_resource.h"
 #include "resource.h"
 
+#include <render_descriptor.h>
+
 namespace avalanche::rendering {
 
     using core::handle_t;
@@ -51,12 +53,16 @@ namespace avalanche::rendering {
         virtual void enable_display_support() = 0;
         virtual void disable_display_support() = 0;
 
-        virtual void on_handle_created(const core::handle_t& handle);
-        virtual void on_handle_free(const core::handle_t& handle);
+        virtual void on_handle_created(const handle_t& handle);
+        virtual void on_handle_free(const handle_t& handle);
 
         virtual void clean_pending_delete_resource() = 0;
 
-        virtual handle_t create_image_view(const ImageViewDesc& desc) = 0;
+        virtual handle_t create_image_view(const ImageViewDesc &desc) = 0;
+
+        virtual handle_t create_command_buffer(const CommandBufferDesc &desc) = 0;
+        virtual void start_encoding_command(handle_t command_buffer) = 0;
+        virtual void finish_encoding_command(handle_t command_buffer) = 0;
 
         template <typename ResourceType>
         requires std::derived_from<ResourceType, IResource>

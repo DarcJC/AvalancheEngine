@@ -3,6 +3,8 @@
 #include "vulkan_window.h"
 #include "vulkan_context.h"
 #include "resource/vulkan_resource.h"
+#include "resource/vulkan_sync.h"
+#include "resource/vulkan_command_buffer.h"
 
 #include <mutex>
 #include <render_resource.h>
@@ -59,8 +61,20 @@ namespace avalanche::rendering::vulkan {
         m_queued_delete_resource.push(resource);
     }
 
-    handle_t RenderDeviceImpl::create_image_view(const ImageViewDesc &desc) {
-        return create_resource<ImageView>(desc);
+    handle_t RenderDeviceImpl::create_image_view(const ImageViewDesc &desc) { return create_resource<ImageView>(desc); }
+
+    handle_t RenderDeviceImpl::create_command_buffer(const CommandBufferDesc &desc) {
+        auto *buffer = construct_resource<CommandBuffer>(*this, desc.pool);
+        buffer->initialize(desc);
+        return get_resource_pool()->register_resource(buffer);
+    }
+
+    void RenderDeviceImpl::start_encoding_command(handle_t command_buffer) {
+        get_resource_by_handle<CommandBuffer>(command_buffer)->begin_record();
+    }
+
+    void RenderDeviceImpl::finish_encoding_command(handle_t command_buffer) {
+        get_resource_by_handle<CommandBuffer>(command_buffer)->end_record();
     }
 
     Context &RenderDeviceImpl::get_context() const { return *m_context; }

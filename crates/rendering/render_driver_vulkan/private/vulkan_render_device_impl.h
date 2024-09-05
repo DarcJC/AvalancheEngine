@@ -1,10 +1,11 @@
 #pragma once
-#include "render_resource.h"
-#include "vulkan_render_device.h"
-#include "vulkan_context.h"
-#include "vulkan/vulkan.hpp"
-#include <queue>
 #include <mutex>
+#include <queue>
+#include <render_descriptor.h>
+#include "render_resource.h"
+#include "vulkan/vulkan.hpp"
+#include "vulkan_context.h"
+#include "vulkan_render_device.h"
 
 
 namespace avalanche::rendering::vulkan {
@@ -25,6 +26,10 @@ namespace avalanche::rendering::vulkan {
         void add_pending_delete_resource(IResource *resource) override;
 
         handle_t create_image_view(const ImageViewDesc &desc) override;
+
+        handle_t create_command_buffer(const CommandBufferDesc& desc) override;
+        void start_encoding_command(handle_t command_buffer) override;
+        void finish_encoding_command(handle_t command_buffer) override;
         // End IRenderDevice interface
 
         template <typename VulkanHandleType, typename ResourceType, typename... Args>

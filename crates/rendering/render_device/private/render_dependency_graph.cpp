@@ -2,5 +2,4 @@
 
 
 namespace avalanche::rendering {
-    IRenderGraph::~IRenderGraph() = default;
 }

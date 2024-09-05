@@ -23,4 +23,10 @@ namespace avalanche::rendering {
         // Leaves zero to using the remaining array layers
         uint32_t num_layers = 1;
     };
+
+    struct CommandBufferDesc : descriptor_tag {
+        handle_t pool;
+        bool is_primary = false;
+    };
+
 }
