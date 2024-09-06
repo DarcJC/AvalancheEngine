@@ -1,12 +1,21 @@
 #pragma once
 
 
-#include "avalanche_core_export.h"
-#include "logger.h"
-#include "type_helper.h"
+#include <concepts>
 #include <cstdint>
 #include <type_traits>
-#include <concepts>
+#include "avalanche_core_export.h"
+#include "logger.h"
+#include "tick_manager.h"
+#include "type_helper.h"
+
+#define REGISTER_SERVER(CLASS_NAME) namespace __static_init {\
+    static struct R {\
+        R() {\
+            avalanche::core::ServerManager::get().register_server(new CLASS_NAME());\
+        }\
+    } r{};\
+}
 
 
 namespace avalanche::core {
@@ -92,6 +101,20 @@ namespace avalanche::core {
 
         ServerCRTPBase& operator=(const ServerCRTPBase&) = delete;
         ServerCRTPBase& operator=(ServerCRTPBase&&) = delete;
+    };
+
+    template <typename T, tick_group_t TG = TickGroup::PostUpdate>
+    class ServerCRTPTickable : public ServerCRTPBase<T>, public ITickable {
+    public:
+        static constexpr tick_group_t server_tick_group = TG;
+
+        virtual void on_startup() {
+            ITickManager::get().register_tickable(this, TG);
+        }
+
+        virtual void on_shutdown() {
+            ITickManager::get().unregister_tickable(this);
+        }
     };
 
 }

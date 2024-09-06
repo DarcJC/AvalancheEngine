@@ -66,6 +66,17 @@ namespace avalanche::rendering {
 
         virtual handle_t create_semaphore() = 0;
         virtual handle_t create_fence(const FenceDesc &desc) = 0;
+        virtual uint32_t get_fence_status(handle_t fence) = 0;
+        /**
+         * @brief Blocking on thread with a fence.
+         *
+         * @note In Vulkan GAPI, the fence isn't a timeline but binary.
+         *
+         * @param fence Target fence
+         * @param excepted_value Wait util fence value == the excepted value
+         * @param timeout is the timeout period in units of nanoseconds.
+         */
+        virtual bool block_on_fence(handle_t fence, uint32_t excepted_value, uint64_t timeout) = 0;
 
         template <typename ResourceType>
         requires std::derived_from<ResourceType, IResource>
@@ -93,7 +104,7 @@ namespace avalanche::rendering {
         requires std::derived_from<ResourceType, IResource>
         ResourceType* get_resource_by_handle(const handle_t& handle) {
             IResource* resource = get_resource_pool()->get_resource(handle);
-            AVALANCHE_CHECK(resource->get_resource_type() == ResourceType::resource_type, "");
+            AVALANCHE_CHECK(resource != nullptr && resource->get_resource_type() == ResourceType::resource_type, "");
             return static_cast<ResourceType*>(resource);
         }
 

@@ -8,6 +8,7 @@
 
 #include <manager/tick_manager.h>
 #include <render_device.h>
+#include <render_frame.h>
 
 
 namespace avalanche::window {
@@ -22,7 +23,7 @@ namespace avalanche::window {
         bool vsync = true;
     };
 
-    class AVALANCHE_WINDOW_SERVER_API IWindow : public core::ITickable {
+    class AVALANCHE_WINDOW_SERVER_API IWindow : public core::ITickable, rendering::CanRenderOnMixin {
     public:
         explicit IWindow(const WindowSettings& settings, rendering::IRenderDevice* device);
         ~IWindow() override;
@@ -38,7 +39,9 @@ namespace avalanche::window {
 
         virtual void show();
 
-        virtual bool should_window_close(int flag) const;
+        AVALANCHE_NO_DISCARD virtual bool should_window_close(int flag) const;
+
+        virtual void on_framebuffer_size_changed(int width, int height);
 
         /**
          * @brief Window's tick isn't managed by TickManager directly in normal.
@@ -57,7 +60,7 @@ namespace avalanche::window {
      * @brief The Window Manager
      * Using glfw3 as the window context provider.
      */
-    class AVALANCHE_WINDOW_SERVER_API IWindowServer : public core::ServerCRTPBase<IWindowServer>, public core::ITickable {
+    class AVALANCHE_WINDOW_SERVER_API IWindowServer : public core::ServerCRTPTickable<IWindowServer, core::TickGroup::PreRendering> {
     public:
         AVALANCHE_NO_DISCARD static IWindowServer* get();
 

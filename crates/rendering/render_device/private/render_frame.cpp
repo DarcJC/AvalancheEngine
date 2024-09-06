@@ -2,4 +2,7 @@
 
 
 namespace avalanche::rendering {
+
+    CanRenderOnMixin::~CanRenderOnMixin() = default;
+
 }  // namespace avalanche::rendering

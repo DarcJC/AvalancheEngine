@@ -81,8 +81,20 @@ namespace avalanche::rendering::vulkan {
         return create_resource_no_desc<Semaphore>();
     }
 
-    handle_t RenderDeviceImpl::create_fence(const FenceDesc &desc) {
-        return create_resource<Fence>(desc);
+    handle_t RenderDeviceImpl::create_fence(const FenceDesc &desc) { return create_resource<Fence>(desc); }
+
+    uint32_t RenderDeviceImpl::get_fence_status(const handle_t fence) {
+        const auto *f = get_resource_by_handle<Fence>(fence);
+        const vk::Result result = get_context().device().getFenceStatus(f->raw_handle());
+        AVALANCHE_CHECK(result != vk::Result::eErrorDeviceLost, "Device lost");
+        return result == vk::Result::eSuccess ? 1 : 0;
+    }
+
+    bool RenderDeviceImpl::block_on_fence(handle_t fence, uint32_t excepted_value, uint64_t timeout) {
+        const auto *f = get_resource_by_handle<Fence>(fence);
+        vk::Result result = get_context().device().waitForFences({f->raw_handle()}, VK_TRUE, timeout);
+        AVALANCHE_CHECK(result != vk::Result::eErrorDeviceLost, "Device lost")
+        return result == vk::Result::eSuccess;
     }
 
     Context &RenderDeviceImpl::get_context() const { return *m_context; }

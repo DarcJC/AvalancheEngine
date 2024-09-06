@@ -21,4 +21,15 @@ namespace avalanche::rendering {
         handle_t final_fence = handle_t::null_handle();
     };
 
+    struct CanRenderOnMixin {
+        virtual ~CanRenderOnMixin();
+
+        /**
+         * @brief Get the render context of this window.
+         * @details The `render_finish_semaphore` must be null for delegated rendering.
+         * @return Frame context in flight (pending to render)
+         */
+        virtual FrameInFlight prepare_frame_context() = 0;
+    };
+
 } // namespace avalanche::rendering

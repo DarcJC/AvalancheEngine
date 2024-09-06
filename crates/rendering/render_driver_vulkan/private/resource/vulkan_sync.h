@@ -22,13 +22,9 @@ namespace avalanche::rendering::vulkan {
         bool is_external() const override;
         // End IResource API
 
-        void initialize() {
-            AVALANCHE_CHECK(!m_semaphore, "Duplicated initialize of semaphore");
+        void initialize();
 
-            vk::SemaphoreCreateInfo info{};
-
-            m_semaphore = render_device<RenderDeviceImpl>().get_context().device().createSemaphore(info);
-        }
+        vk::Semaphore raw_handle() const;
 
     private:
         vk::Semaphore m_semaphore;
@@ -43,16 +39,9 @@ namespace avalanche::rendering::vulkan {
         bool is_external() const override;
         // End IResource API
 
-        void initialize(const FenceDesc& desc) {
-            AVALANCHE_CHECK(!m_fence, "Duplicated initialize of fence");
+        void initialize(const FenceDesc &desc);
 
-            vk::FenceCreateInfo info{};
-            if (desc.signaled) {
-                info.flags |= vk::FenceCreateFlagBits::eSignaled;
-            }
-
-            m_fence = render_device<RenderDeviceImpl>().get_context().device().createFence(info);
-        }
+        vk::Fence raw_handle() const;
 
     private:
         vk::Fence m_fence;

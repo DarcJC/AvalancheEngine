@@ -8,7 +8,6 @@
 #include <unordered_map>
 #include <shared_mutex>
 
-
 #include "render_resource.h"
 #include "resource.h"
 
@@ -24,7 +23,7 @@ namespace avalanche::rendering {
         }
 
         IResource* get_resource(const core::handle_t &handle) override {
-            std::shared_lock<std::shared_mutex> lock(m_mutex);
+            std::lock_guard lock(m_mutex);
             if (const auto it = m_resource.find(handle); it != m_resource.end()) {
                 return it->second;
             }
@@ -32,12 +31,12 @@ namespace avalanche::rendering {
         }
 
         handle_t register_resource(IResource *resource) override {
-            std::unique_lock<std::shared_mutex> lock(m_mutex);
+            std::unique_lock lock(m_mutex);
             AVALANCHE_CHECK(nullptr != resource, "Invalid resource");
             AVALANCHE_CHECK(!is_resource_exist(resource), "Resource is already exist");
             handle_t handle = handle_t::new_handle(false);
             resource->flags().increase_rc();
-            m_resource[std::move(handle)] = resource;
+            m_resource[handle] = resource;
             return handle;
         }
 
@@ -46,7 +45,7 @@ namespace avalanche::rendering {
         }
 
         void reset() {
-            std::unique_lock<std::shared_mutex> lock(m_mutex);
+            std::unique_lock lock(m_mutex);
             for (const auto &res: m_resource | std::views::values) {
                 m_render_device->add_pending_delete_resource(res);
             }
@@ -58,7 +57,7 @@ namespace avalanche::rendering {
             return std::ranges::find(view, resource) != view.end();
         }
     private:
-        std::shared_mutex m_mutex{};
+        std::recursive_mutex m_mutex{};
         std::unordered_map<handle_t, IResource*> m_resource;
 
         IRenderDevice* m_render_device;

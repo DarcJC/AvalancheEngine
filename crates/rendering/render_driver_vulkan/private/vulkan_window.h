@@ -49,12 +49,27 @@ namespace avalanche::rendering::vulkan {
 
         void clean_old_resource();
 
+        handle_t create_image_view(vk::Image image);
+
+        // Begin IWindow interface
+        void on_framebuffer_size_changed(int width, int height) override;
+        // End IWindow interface
+
+        // Begin CanRenderOnMixin interface
+        FrameInFlight prepare_frame_context() override;
+        // End CanRenderOnMixin interface
+
     private:
         vk::SurfaceKHR m_surface = nullptr;
         vk::SwapchainKHR m_swapchain = nullptr;
         vector<handle_t> m_image_handles{};
         vector<handle_t> m_image_view_handles{};
         std::mutex m_window_lock{};
+
+        vk::SurfaceFormatKHR m_surface_format;
+
+        handle_t m_image_acquire_semaphore;
+        handle_t m_final_fence;
 
         friend class VulkanWindowServer;
     };

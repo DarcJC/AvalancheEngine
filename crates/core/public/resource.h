@@ -15,6 +15,8 @@ namespace avalanche::core {
         AVALANCHE_NO_DISCARD static ResourceHandle new_handle(bool trigger_delegate = true);
         AVALANCHE_NO_DISCARD static ResourceHandle null_handle();
 
+        ResourceHandle();
+
         ResourceHandle(const ResourceHandle& other) AVALANCHE_NOEXCEPT;
         ResourceHandle& operator=(const ResourceHandle& other) AVALANCHE_NOEXCEPT;
 

@@ -8,7 +8,6 @@
 #include "resource/vulkan_resource.h"
 
 namespace avalanche::rendering::vulkan {
-
     RenderDeviceImpl* to_vulkan_render_device(IRenderDevice* device) {
         if (device && device->get_graphics_api_type() == EGraphicsAPIType::Vulkan) {
             return static_cast<RenderDeviceImpl*>(device);
@@ -158,7 +157,7 @@ namespace avalanche::rendering::vulkan {
 
         // Create view for swapchain images
         const auto swapchain_image = render_device->get_context().device().getSwapchainImagesKHR(m_swapchain);
-        image_count = swapchain_image.size();
+        image_count = static_cast<uint32_t>(swapchain_image.size());
         m_image_handles.ensure_capacity(image_count);
         m_image_view_handles.ensure_capacity(image_count);
 
@@ -183,10 +182,13 @@ namespace avalanche::rendering::vulkan {
             handle_t view_handle = render_device->register_external_resource<vk::ImageView, ImageView>(view, true);
             m_image_view_handles.add_item(view_handle);
         }
+
+        m_surface_format = surface_format;
     }
 
     void VulkanWindow::clean_old_resource() {
         RenderDeviceImpl *render_device = to_vulkan_render_device(m_render_device);
+        AVALANCHE_CHECK(render_device != nullptr, "Invalid render device");
         // Free image view managed by us
         for (const auto& handle : m_image_view_handles) {
             const vk::ImageView& view = render_device->get_resource_by_handle<ImageView>(handle)->m_image_view;
@@ -196,6 +198,68 @@ namespace avalanche::rendering::vulkan {
         // Clean handles
         m_image_view_handles.clear();
         m_image_handles.clear();
+    }
+
+    handle_t VulkanWindow::create_image_view(vk::Image image) {
+        RenderDeviceImpl* render_device = to_vulkan_render_device(m_render_device);
+        AVALANCHE_CHECK(nullptr != render_device, "Invalid render device");
+
+        vk::ImageViewCreateInfo create_info{};
+        create_info
+            .setImage(image)
+            .setViewType(vk::ImageViewType::e2D)
+            .setFormat(m_surface_format.format)
+            .setComponents(vk::ComponentSwizzle::eIdentity)
+            .setSubresourceRange(vk::ImageSubresourceRange {
+                vk::ImageAspectFlagBits::eColor,
+                0,
+                1,
+                0,
+                1
+            })
+        ;
+        vk::ImageView view = render_device->get_context().device().createImageView(create_info);
+        handle_t view_handle = render_device->register_external_resource<vk::ImageView, ImageView>(view, true);
+        return view_handle;
+    }
+
+    void VulkanWindow::on_framebuffer_size_changed(int width, int height) { create_swapchain(); }
+
+    FrameInFlight VulkanWindow::prepare_frame_context() {
+        RenderDeviceImpl* render_device = to_vulkan_render_device(m_render_device);
+        AVALANCHE_CHECK(nullptr != render_device, "Invalid render device");
+        AVALANCHE_CHECK(m_swapchain, "Invalid swapchain");
+
+        // Create sync resource if not exist
+        if (!m_image_acquire_semaphore) {
+            m_image_acquire_semaphore = render_device->create_semaphore();
+        }
+
+        if (!m_final_fence) {
+            m_final_fence = render_device->create_fence({
+                .signaled = false,
+            });
+        }
+
+        vk::Semaphore semaphore = render_device->get_resource_by_handle<Semaphore>(m_image_acquire_semaphore)->raw_handle();
+        vk::Fence fence = render_device->get_resource_by_handle<Fence>(m_final_fence)->raw_handle();
+
+        vk::AcquireNextImageInfoKHR acquire_next_image_info{};
+        acquire_next_image_info
+            .setSwapchain(m_swapchain)
+            .setTimeout(UINT64_MAX)
+            .setSemaphore(semaphore)
+            .setFence(fence);
+
+        auto result = render_device->get_context().device().acquireNextImage2KHR(acquire_next_image_info);
+
+        AVALANCHE_CHECK(result.result == vk::Result::eSuccess || result.result == vk::Result::eSuboptimalKHR, "Failed to acquire image to render");
+
+        return FrameInFlight {
+            .final_render_target = m_image_view_handles[result.value],
+            .target_usage_semaphore = m_image_acquire_semaphore,
+            .final_fence = m_final_fence,
+        };
     }
 
 } // namespace avalanche::rendering::vulkan

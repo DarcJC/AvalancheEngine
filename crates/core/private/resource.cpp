@@ -12,6 +12,8 @@ namespace avalanche::core {
 
     ResourceHandle ResourceHandle::null_handle() { return ResourceHandle{0, false}; }
 
+    ResourceHandle::ResourceHandle() : ResourceHandle(null_handle()) {}
+
     ResourceHandle::ResourceHandle(const ResourceHandle &other) AVALANCHE_NOEXCEPT
         : m_value(other.m_value)
     {

@@ -33,6 +33,8 @@ namespace avalanche::rendering::vulkan {
 
         handle_t create_semaphore() override;
         handle_t create_fence(const FenceDesc &desc) override;
+        uint32_t get_fence_status(handle_t fence) override;
+        bool block_on_fence(handle_t fence, uint32_t excepted_value, uint64_t timeout) override;
         // End IRenderDevice interface
 
         template <typename VulkanHandleType, typename ResourceType, typename... Args>
