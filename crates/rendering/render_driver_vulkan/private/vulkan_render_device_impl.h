@@ -30,6 +30,9 @@ namespace avalanche::rendering::vulkan {
         handle_t create_command_buffer(const CommandBufferDesc& desc) override;
         void start_encoding_command(handle_t command_buffer) override;
         void finish_encoding_command(handle_t command_buffer) override;
+
+        handle_t create_semaphore() override;
+        handle_t create_fence(const FenceDesc &desc) override;
         // End IRenderDevice interface
 
         template <typename VulkanHandleType, typename ResourceType, typename... Args>

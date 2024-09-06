@@ -77,10 +77,18 @@ namespace avalanche::rendering::vulkan {
         get_resource_by_handle<CommandBuffer>(command_buffer)->end_record();
     }
 
+    handle_t RenderDeviceImpl::create_semaphore() {
+        return create_resource_no_desc<Semaphore>();
+    }
+
+    handle_t RenderDeviceImpl::create_fence(const FenceDesc &desc) {
+        return create_resource<Fence>(desc);
+    }
+
     Context &RenderDeviceImpl::get_context() const { return *m_context; }
 
     unique_ptr<RenderDevice> RenderDevice::create_instance(const DeviceSettings& settings) {
         return { make_unique<RenderDeviceImpl>(settings) };
     }
 
-}
+} // namespace avalanche::rendering::vulkan

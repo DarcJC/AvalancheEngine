@@ -64,6 +64,9 @@ namespace avalanche::rendering {
         virtual void start_encoding_command(handle_t command_buffer) = 0;
         virtual void finish_encoding_command(handle_t command_buffer) = 0;
 
+        virtual handle_t create_semaphore() = 0;
+        virtual handle_t create_fence(const FenceDesc &desc) = 0;
+
         template <typename ResourceType>
         requires std::derived_from<ResourceType, IResource>
         handle_t create_uninitialized_resource() {
@@ -75,6 +78,14 @@ namespace avalanche::rendering {
         handle_t create_resource(const DescType& desc, Args&&... args) {
             ResourceType* resource = construct_resource<ResourceType>(*this);
             resource->initialize(desc, std::forward<Args>(args)...);
+            return get_resource_pool()->register_resource(resource);
+        }
+
+        template <typename ResourceType, typename... Args>
+        requires std::derived_from<ResourceType, IResource>
+        handle_t create_resource_no_desc(Args&&... args) {
+            ResourceType* resource = construct_resource<ResourceType>(*this);
+            resource->initialize(std::forward<Args>(args)...);
             return get_resource_pool()->register_resource(resource);
         }
 

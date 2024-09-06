@@ -29,4 +29,8 @@ namespace avalanche::rendering {
         bool is_primary = false;
     };
 
+    struct FenceDesc : descriptor_tag {
+        bool signaled = false;
+    };
+
 }
