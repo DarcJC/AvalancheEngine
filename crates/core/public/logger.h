@@ -1,12 +1,14 @@
 #pragma once
 
-#include "avalanche_core_export.h"
+#include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <cstddef>
-#include <string_view>
+#include <source_location>
 #include <format>
+#include <string_view>
+#include "avalanche_core_export.h"
 #include "polyfill.h"
+
 
 namespace avalanche::core {
 
@@ -47,6 +49,8 @@ namespace avalanche::core {
 
         virtual void log(LogLevel level, std::string_view msg, const SourceLoc& source_loc) = 0;
 
+        virtual void log(LogLevel level, std::string_view msg, const std::source_location& source_loc) = 0;
+
         virtual void trigger_breakpoint() = 0;
 
     public:
@@ -58,6 +62,12 @@ namespace avalanche::core {
 
         template <typename... Args>
         void log(const SourceLoc& source_loc, LogLevel level, std::format_string<Args...> fmt, Args&&... args) {
+            auto msg = std::format(fmt, std::forward<Args>(args)...);
+            log(level, msg, source_loc);
+        }
+
+        template <typename... Args>
+        void log(const std::source_location& source_loc, LogLevel level, std::format_string<Args...> fmt, Args&&... args) {
             auto msg = std::format(fmt, std::forward<Args>(args)...);
             log(level, msg, source_loc);
         }
@@ -115,7 +125,7 @@ namespace avalanche::core {
 #endif // !defined(AVALANCHE_DISABLE_BREAKPOINT_TRIGGER)
 
 #define AVALANCHE_LOGGER avalanche::core::ILogManager::get()
-#define AVALANCHE_LOG_WITH_SOURCE_LOC(level, ...) AVALANCHE_LOGGER.log(avalanche::core::SourceLoc(__FILE__, __LINE__, AVALANCHE_CURRENT_FUNCTION), level, __VA_ARGS__)
+#define AVALANCHE_LOG_WITH_SOURCE_LOC(level, ...) AVALANCHE_LOGGER.log(std::source_location::current(), level, __VA_ARGS__)
 #define AVALANCHE_CHECK_RUNTIME(expr, ...) do { if (!!(!(expr))) AVALANCHE_UNLIKELY_BRANCH { AVALANCHE_LOG_WITH_SOURCE_LOC(avalanche::core::LogLevel::Critical, __VA_ARGS__); AVALANCHE_TRIGGER_BREAKPOINT(); exit(233); } } while (false);
 #define AVALANCHE_ENSURE(expr, ...) do { if (!!(!(expr))) AVALANCHE_UNLIKELY_BRANCH { AVALANCHE_LOG_WITH_SOURCE_LOC(avalanche::core::LogLevel::Error, __VA_ARGS__); AVALANCHE_TRIGGER_BREAKPOINT(); } } while (false);
 #define AVALANCHE_CHECK(expr, ...) AVALANCHE_CHECK_RUNTIME(expr, __VA_ARGS__)

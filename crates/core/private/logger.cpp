@@ -47,6 +47,10 @@ namespace avalanche::core {
             m_composited_logger->log(spdlog::source_loc(source_loc.filename, source_loc.line, source_loc.function_name), convet_log_level_to_spdlog(level), msg);
         }
 
+        void log(LogLevel level, std::string_view msg, const std::source_location &source_loc) override {
+            m_composited_logger->log(spdlog::source_loc(source_loc.file_name(), source_loc.line(), source_loc.file_name()), convet_log_level_to_spdlog(level), msg);
+        }
+
         void trigger_breakpoint() override {
 #           if !defined(AVALANCHE_DISABLE_BREAKPOINT_TRIGGER)
 #               if defined(_MSC_VER) // MSVC

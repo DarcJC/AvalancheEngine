@@ -3,7 +3,6 @@
 #include <queue>
 #include <render_descriptor.h>
 #include "render_resource.h"
-#include "vulkan/vulkan.hpp"
 #include "vulkan_context.h"
 #include "vulkan_render_device.h"
 

@@ -5,5 +5,7 @@ avalanche_target(
         SRCS "private/window_server.cpp" "private/window.cpp"
 )
 
-target_link_libraries(avalanche_window_server PUBLIC avalanche::core avalanche::render_device avalanche::render_server)
+target_link_libraries(avalanche_window_server
+        PUBLIC avalanche::core
+        PRIVATE avalanche::render_device)
 target_link_libraries(avalanche_window_server PRIVATE glfw)

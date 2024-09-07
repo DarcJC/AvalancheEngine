@@ -7,15 +7,16 @@ namespace avalanche::rendering {
     struct CanRenderOnMixin;
     using core::handle_t;
 
-    class RenderServer : public core::ServerCRTPTickable<RenderServer, core::TickGroup::CollectRenderingResource> {
+    class IRenderServer : public core::ServerCRTPTickable<IRenderServer, core::TickGroup::CollectRenderingResource> {
     public:
-        AVALANCHE_NO_DISCARD static RenderServer* get();
+        AVALANCHE_NO_DISCARD static IRenderServer* get();
 
-        //  Begin ITickable interface
-        void tick(duration_type delta_time) override;
-        //  End ITickable interface
+        virtual void queue_frame_to_render(uint64_t unique_invokee_id, CanRenderOnMixin& object_been_render_on) = 0;
+    };
 
-        void queue_frame_to_render(uint64_t unique_invokee_id, CanRenderOnMixin& object_been_render_on);
+    struct QueueFrameToRenderServerEventData {
+        uint64_t unique_invokee_id;
+        CanRenderOnMixin& object_been_render_on;
     };
 
 } // namespace avalanche::server

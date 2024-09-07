@@ -11,6 +11,7 @@ set(sources
         "private/execution/coroutine.cpp"
         "private/manager/server_manager.cpp"
         "private/manager/tick_manager.cpp"
+        "private/event/named_event.cpp"
 )
 
 avalanche_target(

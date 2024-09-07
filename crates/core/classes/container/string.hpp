@@ -75,4 +75,11 @@ struct std::formatter<avalanche::simple_string> : std::formatter<string_view> {
     }
 };
 
+template <>
+struct std::hash<avalanche::simple_string> {
+    size_t operator()(const avalanche::simple_string& s) const AVALANCHE_NOEXCEPT {
+        return std::hash<const char*>()(s.data());
+    }
+};
+
 

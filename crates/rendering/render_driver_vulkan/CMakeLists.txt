@@ -14,7 +14,9 @@ avalanche_target(
 )
 
 target_link_libraries(avalanche_render_driver_vulkan PUBLIC avalanche::core)
-target_link_libraries(avalanche_render_driver_vulkan PUBLIC avalanche::render_device avalanche::window_server)
+target_link_libraries(avalanche_render_driver_vulkan
+        PUBLIC avalanche::render_device
+        PRIVATE avalanche::window_server)
 
 if (TARGET Vulkan-Headers)
     target_link_libraries(avalanche_render_driver_vulkan PRIVATE Vulkan-Headers)
