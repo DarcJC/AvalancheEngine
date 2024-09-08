@@ -60,4 +60,4 @@ namespace avalanche::rendering {
     IRenderServer * IRenderServer::get() { return core::ServerManager::get().get_server_checked<IRenderServer>(); }
 } // namespace avalanche::server
 
-REGISTER_SERVER(avalanche::rendering::RenderServerImpl);
+DEFINE_REGISTER_SERVER(RenderServer, avalanche::rendering::RenderServerImpl);

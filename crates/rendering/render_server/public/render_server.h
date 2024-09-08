@@ -20,3 +20,5 @@ namespace avalanche::rendering {
     };
 
 } // namespace avalanche::server
+
+EXTERN_REGISTER_SERVER(RenderServer);

@@ -6,6 +6,5 @@ avalanche_target(
 )
 
 target_link_libraries(avalanche_window_server
-        PUBLIC avalanche::core
-        PRIVATE avalanche::render_device)
+        PUBLIC avalanche::core avalanche::render_device)
 target_link_libraries(avalanche_window_server PRIVATE glfw)

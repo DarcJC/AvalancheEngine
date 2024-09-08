@@ -1,13 +1,13 @@
 #pragma once
 #include <container/string.hpp>
-#include <container/functional.h>
+#include <functional>
 
 namespace avalanche::core {
 
     class INamedEvent {
     public:
-        using CallbackType = function<void(void*)>;
-        using CancellerType = function<void()>;
+        using CallbackType = std::function<void(void*)>;
+        using CancellerType = std::function<void()>;
 
         static INamedEvent& get();
 

@@ -9,12 +9,12 @@
 #include "tick_manager.h"
 #include "type_helper.h"
 
-#define REGISTER_SERVER(CLASS_NAME) namespace __static_init {\
-    static struct R {\
-        R() {\
-            avalanche::core::ServerManager::get().register_server(new CLASS_NAME());\
-        }\
-    } r{};\
+#define EXTERN_REGISTER_SERVER(NAME) namespace __static_init { extern size_t NAME; }
+#define DEFINE_REGISTER_SERVER(NAME, CLASS_NAME) namespace __static_init {\
+    size_t NAME = ([] () {\
+        avalanche::core::ServerManager::get().register_server(new CLASS_NAME());\
+        return 0; \
+    }) ();\
 }
 
 

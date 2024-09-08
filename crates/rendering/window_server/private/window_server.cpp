@@ -1,4 +1,5 @@
 #include "window_server.h"
+#include "GLFW/glfw3.h"
 
 
 namespace avalanche::window {

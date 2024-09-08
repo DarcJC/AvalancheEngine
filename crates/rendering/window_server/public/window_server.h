@@ -1,15 +1,19 @@
 #pragma once
 
 #include <cstdint>
-#include "GLFW/glfw3.h"
 #include "avalanche_window_server_export.h"
 #include "container/string.hpp"
 #include "manager/server_manager.h"
-
 #include <manager/tick_manager.h>
-#include <render_device.h>
 #include <render_frame.h>
 
+extern "C" {
+    struct GLFWwindow;
+}
+
+namespace avalanche::rendering {
+    class IRenderDevice;
+}
 
 namespace avalanche::window {
 
