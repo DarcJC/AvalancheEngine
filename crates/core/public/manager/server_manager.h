@@ -8,6 +8,8 @@
 #include "logger.h"
 #include "tick_manager.h"
 #include "type_helper.h"
+#include "container/unique_ptr.hpp"
+
 
 #define EXTERN_REGISTER_SERVER(NAME) namespace __static_init { extern size_t NAME; }
 #define DEFINE_REGISTER_SERVER(NAME, CLASS_NAME) namespace __static_init {\
@@ -32,6 +34,7 @@ namespace avalanche::core {
 
         virtual ~ServerManager();
         static ServerManager& get();
+        static unique_ptr<ServerManager> create_non_static_manager();
 
         virtual void register_server(IServer* server) = 0;
         virtual void unregister_server_and_delete(IServer* server) = 0;
@@ -108,11 +111,11 @@ namespace avalanche::core {
     public:
         static constexpr tick_group_t server_tick_group = TG;
 
-        virtual void on_startup() {
+        void on_startup() override {
             ITickManager::get().register_tickable(this, TG);
         }
 
-        virtual void on_shutdown() {
+        void on_shutdown() override {
             ITickManager::get().unregister_tickable(this);
         }
     };

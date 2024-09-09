@@ -1,6 +1,5 @@
 #include "manager/server_manager.h"
 
-
 #include <shared_mutex>
 #include <mutex>
 #include <unordered_map>
@@ -66,8 +65,13 @@ namespace avalanche::core {
 
     ServerManager::~ServerManager() = default;
 
-    ServerManager& ServerManager::get() {
+    ServerManager &ServerManager::get() {
         static RealServerManager manager{};
         return manager;
     }
-}
+
+    unique_ptr<ServerManager> ServerManager::create_non_static_manager() {
+        return { make_unique<RealServerManager>() };
+    }
+
+} // namespace avalanche::core

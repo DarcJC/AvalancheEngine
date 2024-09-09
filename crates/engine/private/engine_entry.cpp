@@ -6,8 +6,7 @@ namespace avalanche {
 
     class Engine : public IEngine {
     public:
-        explicit Engine(const EngineDesc& desc)
-            : m_create_desc(desc) {}
+        explicit Engine(const EngineDesc &desc);
 
         // Begin IEngine interface
         void poll() override;
@@ -16,9 +15,15 @@ namespace avalanche {
 
     private:
         EngineDesc m_create_desc;
+        unique_ptr<ServerManager> m_server_manager;
     };
 
     unique_ptr<IEngine> IEngine::create_instance(const EngineDesc &desc) { return {make_unique<Engine>(desc)}; }
+
+    Engine::Engine(const EngineDesc &desc)
+        : m_create_desc(desc)
+        , m_server_manager(ServerManager::create_non_static_manager()) {
+    }
 
     void Engine::poll() {}
 

@@ -57,7 +57,10 @@ namespace avalanche::rendering {
         FrameInFlight frame_in_flight = object_been_render_on.prepare_frame_context();
     }
 
-    IRenderServer * IRenderServer::get() { return core::ServerManager::get().get_server_checked<IRenderServer>(); }
-} // namespace avalanche::server
+    IRenderServer *IRenderServer::get() { return core::ServerManager::get().get_server_checked<IRenderServer>(); }
 
-DEFINE_REGISTER_SERVER(RenderServer, avalanche::rendering::RenderServerImpl);
+    unique_ptr<IRenderServer> IRenderServer::create() {
+        return { make_unique<RenderServerImpl>() };
+    }
+
+} // namespace avalanche::server

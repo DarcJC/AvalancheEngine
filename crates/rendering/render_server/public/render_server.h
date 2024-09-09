@@ -10,6 +10,7 @@ namespace avalanche::rendering {
     class IRenderServer : public core::ServerCRTPTickable<IRenderServer, core::TickGroup::CollectRenderingResource> {
     public:
         AVALANCHE_NO_DISCARD static IRenderServer* get();
+        AVALANCHE_NO_DISCARD static unique_ptr<IRenderServer> create();
 
         virtual void queue_frame_to_render(uint64_t unique_invokee_id, CanRenderOnMixin& object_been_render_on) = 0;
     };
@@ -20,5 +21,3 @@ namespace avalanche::rendering {
     };
 
 } // namespace avalanche::server
-
-EXTERN_REGISTER_SERVER(RenderServer);
