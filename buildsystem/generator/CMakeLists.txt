@@ -19,6 +19,9 @@ macro(avalanche_generate_binding)
 
     target_include_directories(${PARSED_ARGS_TARGET} INTERFACE "${target_generation_path}/Headers")
 
+    set(target_include_dirs $<LIST:REMOVE_DUPLICATES,$<LIST:APPEND,$<TARGET_PROPERTY:${PARSED_ARGS_TARGET},INCLUDE_DIRECTORIES>,${SYSTEM_IMPLICIT_INCLUDE_DIRS}>>)
+    set(target_include_dirs_cli $<JOIN:target_include_dirs, --include_dir >)
+
     foreach (src ${PARSED_ARGS_SRCS})
         get_filename_component(src_filename ${src} NAME_WE)
         cmake_path(ABSOLUTE_PATH src OUTPUT_VARIABLE abs_src)
@@ -29,7 +32,7 @@ macro(avalanche_generate_binding)
         file(TOUCH "${header_path}" "${source_path}")
         add_custom_command(
                 OUTPUT "${header_path}" "${source_path}"
-                COMMAND "${Python3_EXECUTABLE}" -m generator binding --binary-dir "${CMAKE_BINARY_DIR}" --input-header "${abs_src}" --out-header "${abs_header_path}" --out-source "${abs_source_path}"
+                COMMAND "${Python3_EXECUTABLE}" -m generator binding --binary-dir "${CMAKE_BINARY_DIR}" --input-header "${abs_src}" --out-header "${abs_header_path}" --out-source "${abs_source_path}" --include-path "${target_include_dirs}"
                 WORKING_DIRECTORY "${AVALANCHE_CMAKE_ROOT_DIR}/buildsystem"
                 COMMENT "Generating binding for ${src} ..."
         )

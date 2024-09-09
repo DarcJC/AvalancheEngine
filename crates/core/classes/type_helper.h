@@ -29,7 +29,10 @@ namespace avalanche::core {
         constexpr auto suffix = std::string_view{">(void)"};
         constexpr auto function = std::string_view{__FUNCSIG__};
 #else
-#error Unsupported compiler
+#   warning Unsupported compiler
+        constexpr auto prefix = std::string_view{"[T = "};
+        constexpr auto suffix = std::string_view{"]"};
+        constexpr auto function = std::string_view{__PRETTY_FUNCTION__};
 #endif
 
         constexpr auto start = function.find(prefix) + prefix.size();

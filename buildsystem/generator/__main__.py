@@ -1,7 +1,11 @@
+from typing import Optional
+
 import typer
 from typer import Option
 
-cli_app = typer.Typer(name="Avalanche Build Tool")
+from .binding import generate_binding
+
+cli_app = typer.Typer(name="Avalanche Build Tool", pretty_exceptions_enable=False)
 
 def main():
     cli_app()
@@ -18,8 +22,10 @@ def binding_generation(
         input_header: str = Option(help="Path to header file to be parse"),
         out_header: str = Option(help="Path to generated header file will be place"),
         out_source: str = Option(help="Path to generated source file will be place"),
+        include_path: Optional[str] = Option(None, help="Include paths to parse file"),
 ):
-    print(input_header)
+    include_paths = [] if include_path is None else include_path.split(";")
+    generate_binding(binary_dir, input_header, out_header, out_source, include_paths)
 
 
 if __name__ == '__main__':

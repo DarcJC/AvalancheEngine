@@ -1,7 +1,7 @@
 #pragma once
-#include <manager/server_manager.h>
-#include <manager/tick_manager.h>
-#include <resource.h>
+#include "manager/server_manager.h"
+#include "manager/tick_manager.h"
+#include "resource.h"
 
 namespace avalanche::rendering {
     struct CanRenderOnMixin;
