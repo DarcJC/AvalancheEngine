@@ -20,3 +20,8 @@ if (AVALANCHE_ENABLE_VULKAN)
             AVALANCHE_ENABLE_VULKAN=1
     )
 endif ()
+
+avalanche_generate_binding(
+        TARGET avalanche_render_server
+        SRCS "public/render_server.h"
+)

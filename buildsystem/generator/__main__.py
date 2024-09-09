@@ -1,44 +1,25 @@
-import argparse
-from .config import GLOBAL_BASE_CONFIG
+import typer
+from typer import Option
 
-
-command_storage = {}
-
-
-def subcommand(name: str, /, *, aliases: list[str] = None):
-    def decorator(func):
-        command_storage[name] = func
-        if aliases:
-            for alias in aliases:
-                command_storage[alias] = func
-        return func
-    return decorator
-
+cli_app = typer.Typer(name="Avalanche Build Tool")
 
 def main():
-    parser = argparse.ArgumentParser(description="Avalanche binding code generator")
-
-    parser.add_argument('subcommand', help='Subcommand to run')
-    parser.add_argument('-b', '--base-dir', type=str, required=True, help='Working directory for the generator')
-
-    GLOBAL_BASE_CONFIG.args = parser.parse_args()
-    GLOBAL_BASE_CONFIG.base_dir = GLOBAL_BASE_CONFIG.args.base_dir
-
-    command = GLOBAL_BASE_CONFIG.args.subcommand
-    if command not in command_storage:
-        print(f"error: subcommand '{command}' not found")
-        exit(1)
-    else:
-        try:
-            command_storage[command]()
-        except Exception as err:
-            print(f"error: error occurred while performing '{command}':\n\t{err.with_traceback()}")
-            exit(2)
+    cli_app()
 
 
-@subcommand('clean')
-def clean() -> int:
-    pass
+@cli_app.command("clean", help="Clean up generated codes")
+def clean(binary_dir: str = Option(help="CMake binary directory")):
+    print(f"Cleaning {binary_dir}...")
+
+
+@cli_app.command("binding", help="Generating binding codes")
+def binding_generation(
+        binary_dir: str = Option(help="CMake binary directory"),
+        input_header: str = Option(help="Path to header file to be parse"),
+        out_header: str = Option(help="Path to generated header file will be place"),
+        out_source: str = Option(help="Path to generated source file will be place"),
+):
+    print(input_header)
 
 
 if __name__ == '__main__':

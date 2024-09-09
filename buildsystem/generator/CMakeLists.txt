@@ -1,11 +1,11 @@
 
 add_custom_target(avalanche_generator_clean_up
         WORKING_DIRECTORY "${AVALANCHE_CMAKE_ROOT_DIR}/buildsystem"
-        COMMAND "${Python3_EXECUTABLE}" -m generator clean --base-dir "${CMAKE_BINARY_DIR}"
-        COMMENT "Cleaning up generated files"
+        COMMAND "${Python3_EXECUTABLE}" -m generator clean --binary-dir "${CMAKE_BINARY_DIR}"
+        COMMENT "Cleaning"
 )
 
-function(avalanche_generate_binding)
+macro(avalanche_generate_binding)
     cmake_parse_arguments(
             PARSED_ARGS
             ""
@@ -17,18 +17,22 @@ function(avalanche_generate_binding)
     set(target_generation_path "${CMAKE_BINARY_DIR}/Generator/Generated/${PARSED_ARGS_TARGET}")
     file(MAKE_DIRECTORY "${target_generation_path}/Headers" "${target_generation_path}/Sources")
 
+    target_include_directories(${PARSED_ARGS_TARGET} INTERFACE "${target_generation_path}/Headers")
+
     foreach (src ${PARSED_ARGS_SRCS})
         get_filename_component(src_filename ${src} NAME_WE)
+        cmake_path(ABSOLUTE_PATH src OUTPUT_VARIABLE abs_src)
         set(header_path "${target_generation_path}/Headers/${src_filename}.generated.h")
+        cmake_path(ABSOLUTE_PATH header_path OUTPUT_VARIABLE abs_header_path)
         set(source_path "${target_generation_path}/Sources/${src_filename}.generated.cpp")
+        cmake_path(ABSOLUTE_PATH source_path OUTPUT_VARIABLE abs_source_path)
         file(TOUCH "${header_path}" "${source_path}")
         add_custom_command(
-                TARGET ${PARSED_ARGS_TARGET}
                 OUTPUT "${header_path}" "${source_path}"
-                COMMAND "${Python3_EXECUTABLE}" -m generator binding --base-dir "${CMAKE_BINARY_DIR}" --input "${src}" --out-header "${header_path}" --out-source "${source_path}"
-                DEPENDS "avalanche_generator_clean_up"
-                WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/Generator"
+                COMMAND "${Python3_EXECUTABLE}" -m generator binding --binary-dir "${CMAKE_BINARY_DIR}" --input-header "${abs_src}" --out-header "${abs_header_path}" --out-source "${abs_source_path}"
+                WORKING_DIRECTORY "${AVALANCHE_CMAKE_ROOT_DIR}/buildsystem"
+                COMMENT "Generating binding for ${src} ..."
         )
-        target_sources(INTERFACE "${header_path}" "${source_path}")
+        target_sources(${PARSED_ARGS_TARGET} PRIVATE "${source_path}")
     endforeach ()
-endfunction()
+endmacro()
