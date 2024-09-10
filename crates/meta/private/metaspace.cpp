@@ -37,7 +37,7 @@ namespace avalanche {
 
     class MetaSpaceImpl : public MetaSpace {
         std::set<MetaSpace *> m_children_spaces;
-        std::unordered_map<std::string_view, Class*, FNV1aHash> m_owned_classes;
+        std::unordered_map<size_t, Class*> m_owned_classes;
 
         MetaSpaceProxy create() override { return MetaSpaceProxy{*this}; }
 
