@@ -2,7 +2,10 @@
 
 
 namespace avalanche {
+
+    struct metadata_tag {};
+
     class Class {
-        // static Class* forName();
+        static Class* forName();
     };
-}
+} // namespace avalanche

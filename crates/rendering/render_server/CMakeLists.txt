@@ -1,7 +1,7 @@
 
 avalanche_target(
         NAME render_server
-        SHARED_LIBRARY
+        STATIC_LIBRARY
         SRCS "private/render_server.cpp"
 )
 

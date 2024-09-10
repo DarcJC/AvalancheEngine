@@ -9,6 +9,5 @@ avalanche_target(
 )
 
 target_link_libraries(avalanche_engine
-        PUBLIC avalanche::core avalanche::window_server
-        PRIVATE avalanche::render_server
+        PUBLIC avalanche::core avalanche::window_server "$<LINK_LIBRARY:WHOLE_ARCHIVE,avalanche::render_server>"
 )

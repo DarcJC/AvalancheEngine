@@ -1,9 +1,14 @@
 import re
-from functools import lru_cache
+import random
+import string
 from typing import Optional
 
 import clang.cindex
 import tomli
+
+
+class Class:
+    pass
 
 
 class CxxHeaderFileProcessor:
@@ -14,16 +19,21 @@ class CxxHeaderFileProcessor:
     _filepath: str
     _out_header: str
     _out_source: str
+    _random_id: str
+    _classes: list[Class]
 
     def __init__(self, filepath: str, include_paths: list[str]):
+        self._random_id = ''.join(random.choices(string.ascii_letters, k=16))
         self.index = clang.cindex.Index.create()
         self._filepath = filepath
         self._include_paths = include_paths
-        self._out_header = '''#pragma once
+        self._out_header = f'''#pragma once
 #pragma warning (disable: 4244)
 \n#include <array>\n#include <tuple>
-#include "class.h"\n#include "polyfill.h"
-#include "container/vector.hpp"\n#include "container/shared_ptr.hpp"\n#include "container/unique_ptr.hpp"\n'''
+#include "class.h"\n#include "metaspace.h"\n#include "polyfill.h"
+#include "container/vector.hpp"\n#include "container/shared_ptr.hpp"\n#include "container/unique_ptr.hpp"\n
+EXTERN_MODULE_METASPACE({self._random_id});
+'''
         self._out_source = ''
 
     def parse(self):
@@ -36,11 +46,11 @@ class CxxHeaderFileProcessor:
             clang_args.append(f'-I{path}')
         self.translation_unit = clang.cindex.TranslationUnit.from_source(self._filepath, args=clang_args, unsaved_files=[( self._filepath, source_content )], options=0, index=self.index)
         self.traverse_ast_and_process(self.translation_unit.cursor)
+        self.append_to_source(self.generate_metaspace_storage())
 
     def save_outputs(self, out_header_path: str, out_source_path: str):
         self._out_header = f'{self._out_header}\n#pragma warning (default: 4244)'
-        self._out_source = f'#include "{out_header_path}"\n{self._out_source}'
-
+        self._out_source = f'#include "{out_header_path}"\n{self._out_source}\n'
         with open(out_header_path, "w") as f:
             f.write(self._out_header)
 
@@ -75,6 +85,17 @@ class CxxHeaderFileProcessor:
                     return
 
                 self.append_to_header(generate_metadata_struct(current_node.displayname, metadata))
+
+    def generate_metaspace_storage(self):
+        template = f'''
+avalanche::MetaSpaceProxy {self._random_id}_create_metaspace_internal__() {{
+    auto result = avalanche::MetaSpace::get().create();
+    
+    return result;
+}}
+avalanche::MetaSpaceProxy G_{self._random_id}_METASPACE_ = {self._random_id}_create_metaspace_internal__();
+'''
+        return template
 
 
 BASE_TYPE_MAPS = {

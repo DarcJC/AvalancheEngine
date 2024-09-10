@@ -1,5 +1,5 @@
 set(META_SOURCES
-        "private/class.cpp"
+        "private/class.cpp" "private/metaspace.cpp"
 )
 
 avalanche_target(
