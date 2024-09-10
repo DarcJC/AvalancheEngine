@@ -19,7 +19,9 @@ class CxxHeaderFileProcessor:
         self.index = clang.cindex.Index.create()
         self._filepath = filepath
         self._include_paths = include_paths
-        self._out_header = '''#pragma once\n#include <array>\n#include <tuple>
+        self._out_header = '''#pragma once
+#pragma warning (disable: 4244)
+\n#include <array>\n#include <tuple>
 #include "class.h"\n#include "polyfill.h"
 #include "container/vector.hpp"\n#include "container/shared_ptr.hpp"\n#include "container/unique_ptr.hpp"\n'''
         self._out_source = ''
@@ -36,10 +38,11 @@ class CxxHeaderFileProcessor:
         self.traverse_ast_and_process(self.translation_unit.cursor)
 
     def save_outputs(self, out_header_path: str, out_source_path: str):
+        self._out_header = f'{self._out_header}\n#pragma warning (default: 4244)'
+        self._out_source = f'#include "{out_header_path}"\n{self._out_source}'
+
         with open(out_header_path, "w") as f:
             f.write(self._out_header)
-
-        self._out_source = f'#include "{out_header_path}"\n{self._out_source}'
 
         with open(out_source_path, "w") as f:
             f.write(self._out_source)
@@ -58,11 +61,14 @@ class CxxHeaderFileProcessor:
     def append_to_source(self, text: str):
         self._out_source += text
 
-    def traverse_ast_and_process(self, current_node: clang.cindex.Cursor):
-        for child in current_node.get_children():
-            self.traverse_ast_and_process(child)
+    def traverse_ast_and_process(self, current_node: clang.cindex.Cursor, depth: int = 0):
+        if depth > 5:
+            return
 
-        if current_node.kind == clang.cindex.CursorKind.CLASS_DECL:
+        for child in current_node.get_children():
+            self.traverse_ast_and_process(child, depth=depth+1)
+
+        if current_node.kind == clang.cindex.CursorKind.CLASS_DECL or current_node.kind == clang.cindex.CursorKind.STRUCT_DECL:
             if current_node.raw_comment is not None:
                 metadata = self.parse_comment(current_node.raw_comment)
                 if metadata is None:
@@ -71,21 +77,27 @@ class CxxHeaderFileProcessor:
                 self.append_to_header(generate_metadata_struct(current_node.displayname, metadata))
 
 
+BASE_TYPE_MAPS = {
+    int: 'int32_t',
+    float: 'float',
+    bool: 'bool'
+}
+
+
 def generate_fields(metadata: dict) -> str:
     result = ""
     for (k, v) in metadata.items():
-        print(type(k), type(v))
         value_type = type(v)
-        if value_type is int:
-            result += f"int32_t {k} = {v};\n"
-        elif value_type is float:
-            result += f"float {k} = {v};\n"
+        if value_type is int or value_type is float:
+            result += f"{BASE_TYPE_MAPS[value_type]} {k} = {v};\n"
         elif value_type is bool:
-            result += f"bool {k} = {'true' if v else 'false'};\n"
+            result += f"{BASE_TYPE_MAPS[value_type]} {k} = {'true' if v else 'false'};\n"
         elif isinstance(v, dict):
             result += (f'struct {{\n'
                        f'   {generate_fields(v)}'
                        f'}} {k} {{}};\n')
+        elif isinstance(v, list):
+            result += f'std::tuple<{",".join(map(lambda x: BASE_TYPE_MAPS[type(x)], v))}> {k} = std::make_tuple({",".join(map(lambda x: str(int(x)) if type(x) == bool else str(x), v))});\n'
 
     return result
 
@@ -93,7 +105,7 @@ def generate_fields(metadata: dict) -> str:
 def generate_metadata_struct(name: str, metadata: dict) -> str:
     template = f"""
     namespace avalanche::generated {{
-        struct {name}MetadataType {{
+        struct {name}MetadataType : metadata_tag {{
             {generate_fields(metadata)}
         }};
     }}

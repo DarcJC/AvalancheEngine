@@ -34,6 +34,7 @@ macro(avalanche_generate_binding)
                 OUTPUT "${header_path}" "${source_path}"
                 COMMAND "${Python3_EXECUTABLE}" -m generator binding --binary-dir "${CMAKE_BINARY_DIR}" --input-header "${abs_src}" --out-header "${abs_header_path}" --out-source "${abs_source_path}" --include-path "${target_include_dirs}"
                 WORKING_DIRECTORY "${AVALANCHE_CMAKE_ROOT_DIR}/buildsystem"
+                DEPENDS ${src}
                 COMMENT "Generating binding for ${src} ..."
         )
         target_sources(${PARSED_ARGS_TARGET} PRIVATE "${source_path}")
