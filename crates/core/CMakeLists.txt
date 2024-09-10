@@ -20,4 +20,5 @@ avalanche_target(
         SRCS ${sources}
 )
 
+target_link_libraries(avalanche_core PUBLIC avalanche::meta)
 target_link_libraries(avalanche_core PRIVATE spdlog::spdlog)

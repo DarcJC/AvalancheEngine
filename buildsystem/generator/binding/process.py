@@ -1,4 +1,5 @@
 import re
+from functools import lru_cache
 from typing import Optional
 
 import clang.cindex
@@ -18,8 +19,10 @@ class CxxHeaderFileProcessor:
         self.index = clang.cindex.Index.create()
         self._filepath = filepath
         self._include_paths = include_paths
-        self._out_header = "#pragma once"
-        self._out_source = ""
+        self._out_header = '''#pragma once\n#include <array>\n#include <tuple>
+#include "class.h"\n#include "polyfill.h"
+#include "container/vector.hpp"\n#include "container/shared_ptr.hpp"\n#include "container/unique_ptr.hpp"\n'''
+        self._out_source = ''
 
     def parse(self):
         with open(file=self._filepath, mode='rb') as f:
@@ -35,6 +38,9 @@ class CxxHeaderFileProcessor:
     def save_outputs(self, out_header_path: str, out_source_path: str):
         with open(out_header_path, "w") as f:
             f.write(self._out_header)
+
+        self._out_source = f'#include "{out_header_path}"\n{self._out_source}'
+
         with open(out_source_path, "w") as f:
             f.write(self._out_source)
 
@@ -46,6 +52,12 @@ class CxxHeaderFileProcessor:
         toml_text = matches.group(1).replace("///", "").strip()
         return tomli.loads(toml_text)
 
+    def append_to_header(self, text: str):
+        self._out_header += text
+
+    def append_to_source(self, text: str):
+        self._out_source += text
+
     def traverse_ast_and_process(self, current_node: clang.cindex.Cursor):
         for child in current_node.get_children():
             self.traverse_ast_and_process(child)
@@ -56,5 +68,35 @@ class CxxHeaderFileProcessor:
                 if metadata is None:
                     return
 
-                qual_type: clang.cindex.Type = current_node.type
-                print(qual_type.kind, qual_type.spelling)
+                self.append_to_header(generate_metadata_struct(current_node.displayname, metadata))
+
+
+def generate_fields(metadata: dict) -> str:
+    result = ""
+    for (k, v) in metadata.items():
+        print(type(k), type(v))
+        value_type = type(v)
+        if value_type is int:
+            result += f"int32_t {k} = {v};\n"
+        elif value_type is float:
+            result += f"float {k} = {v};\n"
+        elif value_type is bool:
+            result += f"bool {k} = {'true' if v else 'false'};\n"
+        elif isinstance(v, dict):
+            result += (f'struct {{\n'
+                       f'   {generate_fields(v)}'
+                       f'}} {k} {{}};\n')
+
+    return result
+
+
+def generate_metadata_struct(name: str, metadata: dict) -> str:
+    template = f"""
+    namespace avalanche::generated {{
+        struct {name}MetadataType {{
+            {generate_fields(metadata)}
+        }};
+    }}
+    """
+
+    return template
