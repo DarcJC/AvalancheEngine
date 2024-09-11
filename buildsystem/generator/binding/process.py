@@ -2,12 +2,13 @@ import re
 import random
 import string
 from functools import cached_property
-from os.path import curdir
 from typing import Optional, Literal
 from pathlib import Path
 
 import clang.cindex
 import tomli
+
+from .hash import FNV1a
 
 
 class Class:
@@ -69,6 +70,25 @@ class Class:
     @cached_property
     def derived_from_object(self) -> bool:
         return 'avalanche::Object' in [cursor.type.get_canonical().spelling for cursor in self.base_classes_flatten]
+
+    @cached_property
+    def camel_case_name(self):
+        fullname = self.fully_qualified_name
+        # split by '::'
+        parts = fullname.split('::')
+        # Capitalizing the first char
+        capitalized_parts = [part.capitalize() for part in parts]
+        # Join parts
+        camel_case_string = ''.join(capitalized_parts)
+        return camel_case_string
+
+    @cached_property
+    def metaclass_name(self) -> str:
+        return f'{self.camel_case_name}MetaClass__internal__'
+
+    @cached_property
+    def type_hash(self) -> int:
+        return FNV1a().hash_64_fnv1a(self.fully_qualified_name)
 
 
 class CxxHeaderFileProcessor:
@@ -160,13 +180,14 @@ EXTERN_MODULE_METASPACE({self._random_id});
 
         self.append_to_header(generate_metadata_struct(current_class))
         self.append_to_header(generate_constant_class_name(current_class))
+        self.append_to_source(generate_metaclass(current_class))
         self._registered_classes.append(current_class)
 
     def generate_metaspace_storage(self):
         template = f'''
 avalanche::MetaSpaceProxy {self._random_id}_create_metaspace_internal__() {{
     auto result = avalanche::MetaSpace::get().create();
-    
+    {';'.join([f'result->register_class(new {clazz.metaclass_name}());' for clazz in self._registered_classes])}
     return result;
 }}
 avalanche::MetaSpaceProxy G_{self._random_id}_METASPACE_ = {self._random_id}_create_metaspace_internal__();
@@ -257,3 +278,23 @@ def get_base_classes_of_type(cursor: clang.cindex.Cursor) -> list[clang.cindex.C
                     result.append(tchild)
                     result.extend(get_base_classes_of_type(tchild))
     return result
+
+
+def generate_metaclass(current_class: Class) -> str:
+    template = f"""
+class {current_class.metaclass_name} : public avalanche::Class {{
+    std::string_view full_name() const override {{
+        return full_name_str();
+    }}
+    
+    const std::string& full_name_str() const override {{
+        static std::string value("{current_class.fully_qualified_name}");
+        return value;
+    }}
+    
+    size_t hash() const override {{
+        return {current_class.type_hash}ULL;
+    }}
+}};
+"""
+    return template

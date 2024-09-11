@@ -2,10 +2,11 @@
 #include "class.h"
 
 #include <cassert>
-#include <set>
 #include <map>
-#include <unordered_map>
+#include <ranges>
+#include <set>
 #include <string>
+#include <unordered_map>
 
 
 namespace avalanche {
@@ -42,8 +43,14 @@ namespace avalanche {
         std::set<MetaSpace*> m_children_spaces;
         std::unordered_map<std::string, Class*> m_owned_classes;
         std::map<std::string, MetaSpace*> m_quick_path_to_class;
-
+    public:
         MetaSpaceProxy create() override { return MetaSpaceProxy{*this}; }
+
+        ~MetaSpaceImpl() override {
+            for (const auto& value: m_owned_classes | std::views::values) {
+                delete value;
+            }
+        }
 
         MetaSpace* allocate_meta_space() override {
             MetaSpace *new_meta_space = new MetaSpaceImpl();
@@ -82,11 +89,12 @@ namespace avalanche {
             }
 
             if (const auto it = m_quick_path_to_class.find(class_name); it != m_quick_path_to_class.end()) {
-                if (const auto result = it->second->find_class(name); nullptr != result) {
-                    return result;
-                } else {
-                    m_quick_path_to_class.erase(class_name);
+                if (m_children_spaces.contains(it->second)) {
+                    if (const auto result = it->second->find_class(name); nullptr != result) {
+                        return result;
+                    }
                 }
+                m_quick_path_to_class.erase(class_name);
             }
 
             for (MetaSpace* child : m_children_spaces) {

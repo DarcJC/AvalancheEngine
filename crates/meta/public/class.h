@@ -28,10 +28,10 @@ namespace avalanche {
 
         virtual ~Class() = default;
 
-        virtual std::string_view full_name() = 0;
-        virtual const std::string& full_name_str() = 0;
+        [[nodiscard]] virtual std::string_view full_name() const = 0;
+        [[nodiscard]] virtual const std::string& full_name_str() const = 0;
 
-        virtual size_t hash() = 0;
+        [[nodiscard]] virtual size_t hash() const = 0;
     };
 
     template <typename>
