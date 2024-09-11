@@ -2,7 +2,7 @@
 #include <engine.h>
 #include <window_server.h>
 
-#include "../../rendering/render_server/public/render_server.h"
+#include "render_server.h"
 
 using namespace avalanche;
 

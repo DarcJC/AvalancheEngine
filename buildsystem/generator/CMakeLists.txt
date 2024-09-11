@@ -17,7 +17,7 @@ macro(avalanche_generate_binding)
     set(target_generation_path "${CMAKE_BINARY_DIR}/Generator/Generated/${PARSED_ARGS_TARGET}")
     file(MAKE_DIRECTORY "${target_generation_path}/Headers" "${target_generation_path}/Sources")
 
-    target_include_directories(${PARSED_ARGS_TARGET} INTERFACE "${target_generation_path}/Headers")
+    target_include_directories(${PARSED_ARGS_TARGET} PUBLIC "${target_generation_path}/Headers")
 
     set(target_include_dirs $<LIST:REMOVE_DUPLICATES,$<LIST:APPEND,$<TARGET_PROPERTY:${PARSED_ARGS_TARGET},INCLUDE_DIRECTORIES>,${SYSTEM_IMPLICIT_INCLUDE_DIRS}>>)
     set(target_include_dirs_cli $<JOIN:target_include_dirs, --include_dir >)

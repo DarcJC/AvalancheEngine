@@ -1,8 +1,11 @@
 #include "class.h"
+#include "metaspace.h"
 
 namespace avalanche {
-    Class* Class::forName() {
-        return nullptr;
+
+    Class* Class::for_name(const std::string_view name) {
+        return MetaSpace::get().find_class(name);
     }
+
 }
 

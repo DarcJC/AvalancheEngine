@@ -5,10 +5,12 @@
 #include <cstdint>
 #include <type_traits>
 #include "avalanche_core_export.h"
+#include "container/unique_ptr.hpp"
 #include "logger.h"
 #include "tick_manager.h"
 #include "type_helper.h"
-#include "container/unique_ptr.hpp"
+
+#include <class.h>
 
 
 #define EXTERN_REGISTER_SERVER(NAME) namespace __static_init { extern size_t NAME; }
@@ -85,7 +87,7 @@ namespace avalanche::core {
     };
 
     template <typename T>
-    class ServerCRTPBase : public ServerManager::IServer {
+    class ServerCRTPBase : public ServerManager::IServer, public ObjectCRTP<T> {
     public:
         using Super = ServerManager::IServer;
         using Super::size_type;

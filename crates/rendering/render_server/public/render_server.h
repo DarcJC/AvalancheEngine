@@ -3,6 +3,7 @@
 #include "manager/server_manager.h"
 #include "manager/tick_manager.h"
 #include "resource.h"
+#include "render_server.generated.h"
 
 namespace avalanche::rendering {
     struct CanRenderOnMixin;

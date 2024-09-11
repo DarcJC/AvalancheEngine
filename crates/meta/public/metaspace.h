@@ -43,6 +43,8 @@ namespace avalanche {
         virtual void register_class(Class* new_class) = 0;
         virtual void unregister_class(Class* new_class) = 0;
 
+        virtual Class* find_class(std::string_view name) = 0;
+
     protected:
         virtual MetaSpace* allocate_meta_space() = 0;
         virtual void deallocate_meta_space(MetaSpace* space) = 0;

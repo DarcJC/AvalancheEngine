@@ -34,7 +34,7 @@ class CxxHeaderFileProcessor:
 #include "container/vector.hpp"\n#include "container/shared_ptr.hpp"\n#include "container/unique_ptr.hpp"\n
 EXTERN_MODULE_METASPACE({self._random_id});
 '''
-        self._out_source = ''
+        self._out_source = f'#include "{self._filepath}"'
 
     def parse(self):
         with open(file=self._filepath, mode='rb') as f:
@@ -84,7 +84,10 @@ EXTERN_MODULE_METASPACE({self._random_id});
                 if metadata is None:
                     return
 
+                clang_type: clang.cindex.Type = current_node.type
+
                 self.append_to_header(generate_metadata_struct(current_node.displayname, metadata))
+                self.append_to_header(generate_constant_class_name(clang_type.spelling, current_node.kind))
 
     def generate_metaspace_storage(self):
         template = f'''
@@ -103,6 +106,13 @@ BASE_TYPE_MAPS = {
     float: 'float',
     bool: 'bool'
 }
+
+
+def extract_namespace(spelling: str) -> (str, str):
+    last_double_colon = spelling.rfind("::")
+    if last_double_colon != -1:
+        return spelling[:last_double_colon], spelling[last_double_colon+2:]
+    return "", spelling
 
 
 def generate_fields(metadata: dict) -> str:
@@ -125,11 +135,32 @@ def generate_fields(metadata: dict) -> str:
 
 def generate_metadata_struct(name: str, metadata: dict) -> str:
     template = f"""
-    namespace avalanche::generated {{
-        struct {name}MetadataType : metadata_tag {{
-            {generate_fields(metadata)}
-        }};
-    }}
+namespace avalanche::generated {{
+    struct {name}MetadataType : metadata_tag {{
+        {generate_fields(metadata)}
+    }};
+}} // namespace avalanche::generated
     """
 
+    return template
+
+
+def generate_constant_class_name(full_name: str, kind: clang.cindex.CursorKind) -> str:
+    prefix = "class"
+    if kind == clang.cindex.CursorKind.CLASS_DECL:
+        prefix = "class"
+    elif kind == clang.cindex.CursorKind.STRUCT_DECL:
+        prefix = "struct"
+    namespace, class_name = extract_namespace(spelling=full_name)
+    template = f"""
+namespace {namespace} {{
+    {prefix} {class_name};
+}} // namespace {namespace}
+namespace avalanche {{
+    template <>
+    struct class_name<{full_name}> {{
+        static constexpr const char* value = "{full_name}";
+    }};
+}} // namespace avalanche
+"""
     return template
