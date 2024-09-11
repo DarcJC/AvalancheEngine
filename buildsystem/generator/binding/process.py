@@ -18,7 +18,7 @@ class Class:
 
     @cached_property
     def type(self) -> clang.cindex.Type:
-        return self.decl_cursor.type
+        return self.decl_cursor.type.get_canonical()
 
     @cached_property
     def metadata(self) -> Optional[dict]:
@@ -48,6 +48,27 @@ class Class:
         elif self.decl_cursor.kind == clang.cindex.CursorKind.UNION_DECL:
             prefix = "union"
         return prefix
+
+    @cached_property
+    def base_classes(self) -> set[clang.cindex.Cursor]:
+        result = []
+        for child in self.decl_cursor.get_children():
+            if child.kind == clang.cindex.CursorKind.CXX_BASE_SPECIFIER:
+                result.append(child)
+        return set(result)
+
+    @cached_property
+    def base_classes_flatten(self) -> set[clang.cindex.Cursor]:
+        result = []
+        for child in self.decl_cursor.get_children():
+            if child.kind == clang.cindex.CursorKind.CXX_BASE_SPECIFIER:
+                result.append(child)
+                result.extend(get_base_classes_of_type(child))
+        return set(result)
+
+    @cached_property
+    def derived_from_object(self) -> bool:
+        return 'avalanche::Object' in [cursor.type.get_canonical().spelling for cursor in self.base_classes_flatten]
 
 
 class CxxHeaderFileProcessor:
@@ -91,7 +112,7 @@ EXTERN_MODULE_METASPACE({self._random_id});
         self._include_paths.remove('')
         for path in self._include_paths:
             clang_args.append(f'-I{path}')
-        self.translation_unit = clang.cindex.TranslationUnit.from_source(self._filepath, args=clang_args, unsaved_files=[( self._filepath, source_content )], options=0, index=self.index)
+            self.translation_unit = clang.cindex.TranslationUnit.from_source(self._filepath, args=clang_args, unsaved_files=[( self._filepath, source_content )], options=clang.cindex.TranslationUnit.PARSE_SKIP_FUNCTION_BODIES, index=self.index)
         self.traverse_ast_and_process(self.translation_unit.cursor)
         for clazz in self._classes:
             self.generate_class_info(clazz)
@@ -121,6 +142,9 @@ EXTERN_MODULE_METASPACE({self._random_id});
         if current_node.kind != clang.cindex.CursorKind.CLASS_DECL and current_node.kind != clang.cindex.CursorKind.STRUCT_DECL:
             return
 
+        if not current_node.is_definition():
+            return
+
         source_location: clang.cindex.SourceLocation = current_node.location
         current_file_path = Path(source_location.file.name).resolve()
 
@@ -131,8 +155,12 @@ EXTERN_MODULE_METASPACE({self._random_id});
         self._classes.append(current_class)
 
     def generate_class_info(self, current_class: Class):
+        if current_class.metadata is None and not current_class.derived_from_object:
+            return
+
         self.append_to_header(generate_metadata_struct(current_class))
         self.append_to_header(generate_constant_class_name(current_class))
+        self._registered_classes.append(current_class)
 
     def generate_metaspace_storage(self):
         template = f'''
@@ -197,12 +225,10 @@ def generate_constant_class_name(current_class: Class) -> str:
 namespace {namespace} {{
     {current_class.kind} {class_name};
 }} // namespace {namespace}
-namespace avalanche {{
-    template <>
-    struct class_name<{current_class.fully_qualified_name}> {{
-        static constexpr const char* value = "{current_class.fully_qualified_name}";
-    }};
-}} // namespace avalanche
+template <>
+struct avalanche::class_name<{current_class.fully_qualified_name}> {{
+    static constexpr const char* value = "{current_class.fully_qualified_name}";
+}};
 """
     return template
 
@@ -213,3 +239,21 @@ def parse_comment(raw_comment: str) -> Optional[dict]:
         return None
     toml_text = matches.group(1).replace("///", "").strip()
     return tomli.loads(toml_text)
+
+
+def get_base_classes_of_type(cursor: clang.cindex.Cursor) -> list[clang.cindex.Cursor]:
+    if not cursor:
+        return []
+
+    result = []
+    for child in cursor.get_children():
+        if child.kind == clang.cindex.CursorKind.CXX_BASE_SPECIFIER:
+            result.append(child)
+            result.extend(get_base_classes_of_type(child))
+        elif child.kind == clang.cindex.CursorKind.TEMPLATE_REF:
+            definition_cursor: clang.cindex.Cursor = child.get_definition()
+            for tchild in definition_cursor.get_children():
+                if tchild.kind == clang.cindex.CursorKind.CXX_BASE_SPECIFIER:
+                    result.append(tchild)
+                    result.extend(get_base_classes_of_type(tchild))
+    return result
