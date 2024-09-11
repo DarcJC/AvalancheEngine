@@ -1,14 +1,53 @@
 import re
 import random
 import string
-from typing import Optional
+from functools import cached_property
+from os.path import curdir
+from typing import Optional, Literal
+from pathlib import Path
 
 import clang.cindex
 import tomli
 
 
 class Class:
-    pass
+    decl_cursor: clang.cindex.Cursor
+
+    def __init__(self, cursor_of_decl: clang.cindex.Cursor):
+        self.decl_cursor = cursor_of_decl
+
+    @cached_property
+    def type(self) -> clang.cindex.Type:
+        return self.decl_cursor.type
+
+    @cached_property
+    def metadata(self) -> Optional[dict]:
+        if self.decl_cursor.raw_comment is None:
+            return None
+        return parse_comment(self.decl_cursor.raw_comment)
+
+    @cached_property
+    def namespace(self) -> str:
+        return extract_namespace(self.type.spelling)[0]
+
+    @cached_property
+    def fully_qualified_name(self) -> str:
+        return self.type.spelling
+
+    @cached_property
+    def display_name(self) -> str:
+        return self.decl_cursor.spelling
+
+    @cached_property
+    def kind(self) -> Literal['class', 'struct', 'union']:
+        prefix: Literal['class', 'struct', 'union'] = "class"
+        if self.decl_cursor.kind == clang.cindex.CursorKind.CLASS_DECL:
+            prefix = "class"
+        elif self.decl_cursor.kind == clang.cindex.CursorKind.STRUCT_DECL:
+            prefix = "struct"
+        elif self.decl_cursor.kind == clang.cindex.CursorKind.UNION_DECL:
+            prefix = "union"
+        return prefix
 
 
 class CxxHeaderFileProcessor:
@@ -21,6 +60,8 @@ class CxxHeaderFileProcessor:
     _out_source: str
     _random_id: str
     _classes: list[Class]
+
+    _registered_classes: list[Class]
 
     def __init__(self, filepath: str, include_paths: list[str]):
         self._random_id = ''.join(random.choices(string.ascii_letters, k=16))
@@ -35,35 +76,37 @@ class CxxHeaderFileProcessor:
 EXTERN_MODULE_METASPACE({self._random_id});
 '''
         self._out_source = f'#include "{self._filepath}"'
+        self._classes = []
+        self._registered_classes = []
+
+    @cached_property
+    def processing_file(self):
+        return Path(self._filepath).resolve()
 
     def parse(self):
         with open(file=self._filepath, mode='rb') as f:
             source_content = f.read().decode(encoding='utf-8')
-        clang_args = ['-x', 'c++', '-std=c++20', '-Wno-pragma-once-outside-header', '-DDURING_BUILD_TOOL_PROCESS=1']
+        clang_args = ['-x', 'c++', '-std=c++23', '-Wno-pragma-once-outside-header', '-DDURING_BUILD_TOOL_PROCESS=1']
         # Remove empty item
         self._include_paths.remove('')
         for path in self._include_paths:
             clang_args.append(f'-I{path}')
         self.translation_unit = clang.cindex.TranslationUnit.from_source(self._filepath, args=clang_args, unsaved_files=[( self._filepath, source_content )], options=0, index=self.index)
         self.traverse_ast_and_process(self.translation_unit.cursor)
+        for clazz in self._classes:
+            self.generate_class_info(clazz)
         self.append_to_source(self.generate_metaspace_storage())
 
     def save_outputs(self, out_header_path: str, out_source_path: str):
         self._out_header = f'{self._out_header}\n#pragma warning (default: 4244)'
         self._out_source = f'#include "{out_header_path}"\n{self._out_source}\n'
         with open(out_header_path, "w") as f:
+            f.truncate()
             f.write(self._out_header)
 
         with open(out_source_path, "w") as f:
+            f.truncate()
             f.write(self._out_source)
-
-    @staticmethod
-    def parse_comment(raw_comment: str) -> Optional[dict]:
-        matches = re.search(r'@avalanche::begin(.*?)@avalanche::end', raw_comment, re.DOTALL)
-        if not matches:
-            return None
-        toml_text = matches.group(1).replace("///", "").strip()
-        return tomli.loads(toml_text)
 
     def append_to_header(self, text: str):
         self._out_header += text
@@ -72,22 +115,24 @@ EXTERN_MODULE_METASPACE({self._random_id});
         self._out_source += text
 
     def traverse_ast_and_process(self, current_node: clang.cindex.Cursor, depth: int = 0):
-        if depth > 5:
-            return
-
         for child in current_node.get_children():
             self.traverse_ast_and_process(child, depth=depth+1)
 
-        if current_node.kind == clang.cindex.CursorKind.CLASS_DECL or current_node.kind == clang.cindex.CursorKind.STRUCT_DECL:
-            if current_node.raw_comment is not None:
-                metadata = self.parse_comment(current_node.raw_comment)
-                if metadata is None:
-                    return
+        if current_node.kind != clang.cindex.CursorKind.CLASS_DECL and current_node.kind != clang.cindex.CursorKind.STRUCT_DECL:
+            return
 
-                clang_type: clang.cindex.Type = current_node.type
+        source_location: clang.cindex.SourceLocation = current_node.location
+        current_file_path = Path(source_location.file.name).resolve()
 
-                self.append_to_header(generate_metadata_struct(current_node.displayname, metadata))
-                self.append_to_header(generate_constant_class_name(clang_type.spelling, current_node.kind))
+        if current_file_path != self.processing_file:
+            return
+
+        current_class = Class(current_node)
+        self._classes.append(current_class)
+
+    def generate_class_info(self, current_class: Class):
+        self.append_to_header(generate_metadata_struct(current_class))
+        self.append_to_header(generate_constant_class_name(current_class))
 
     def generate_metaspace_storage(self):
         template = f'''
@@ -115,7 +160,8 @@ def extract_namespace(spelling: str) -> (str, str):
     return "", spelling
 
 
-def generate_fields(metadata: dict) -> str:
+def generate_fields(metadata: Optional[dict]) -> str:
+    metadata = metadata or {}
     result = ""
     for (k, v) in metadata.items():
         value_type = type(v)
@@ -133,11 +179,11 @@ def generate_fields(metadata: dict) -> str:
     return result
 
 
-def generate_metadata_struct(name: str, metadata: dict) -> str:
+def generate_metadata_struct(current_class: Class) -> str:
     template = f"""
 namespace avalanche::generated {{
-    struct {name}MetadataType : metadata_tag {{
-        {generate_fields(metadata)}
+    struct {current_class.display_name}MetadataType : metadata_tag {{
+        {generate_fields(current_class.metadata)}
     }};
 }} // namespace avalanche::generated
     """
@@ -145,22 +191,25 @@ namespace avalanche::generated {{
     return template
 
 
-def generate_constant_class_name(full_name: str, kind: clang.cindex.CursorKind) -> str:
-    prefix = "class"
-    if kind == clang.cindex.CursorKind.CLASS_DECL:
-        prefix = "class"
-    elif kind == clang.cindex.CursorKind.STRUCT_DECL:
-        prefix = "struct"
-    namespace, class_name = extract_namespace(spelling=full_name)
+def generate_constant_class_name(current_class: Class) -> str:
+    namespace, class_name = extract_namespace(spelling=current_class.fully_qualified_name)
     template = f"""
 namespace {namespace} {{
-    {prefix} {class_name};
+    {current_class.kind} {class_name};
 }} // namespace {namespace}
 namespace avalanche {{
     template <>
-    struct class_name<{full_name}> {{
-        static constexpr const char* value = "{full_name}";
+    struct class_name<{current_class.fully_qualified_name}> {{
+        static constexpr const char* value = "{current_class.fully_qualified_name}";
     }};
 }} // namespace avalanche
 """
     return template
+
+
+def parse_comment(raw_comment: str) -> Optional[dict]:
+    matches = re.search(r'@avalanche::begin(.*?)@avalanche::end', raw_comment, re.DOTALL)
+    if not matches:
+        return None
+    toml_text = matches.group(1).replace("///", "").strip()
+    return tomli.loads(toml_text)
