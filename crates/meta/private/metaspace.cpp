@@ -7,11 +7,12 @@
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <mutex>
 
 
 namespace avalanche {
 
-    constexpr uint32_t FNV1aHash::hash_32_fnv1a(const std::string_view str) noexcept {
+    uint32_t FNV1aHash::hash_32_fnv1a(const std::string_view str) noexcept {
         uint32_t hash = detail::FNV1aInternal<uint32_t>::val;
         for (const unsigned char c : str) {
             hash = hash ^ c;
@@ -20,7 +21,7 @@ namespace avalanche {
         return hash;
     }
 
-    constexpr uint64_t FNV1aHash::hash_64_fnv1a(const std::string_view str) noexcept {
+    uint64_t FNV1aHash::hash_64_fnv1a(const std::string_view str) noexcept {
         uint64_t hash = detail::FNV1aInternal<uint64_t>::val;
         for (const unsigned char c : str) {
             hash = hash ^ c;
@@ -45,6 +46,17 @@ namespace avalanche {
         std::map<std::string, MetaSpace*> m_quick_path_to_class;
     public:
         MetaSpaceProxy create() override { return MetaSpaceProxy{*this}; }
+
+        MetaSpaceImpl() {
+            // Register primitive types in the global metaspace
+            static std::once_flag flag;
+
+            std::call_once(flag, [this] {
+                for (size_t i = 0; i < fundamental_type_names::count; ++i) {
+                    register_class(new PrimitiveClass(fundamental_type_names_v[i]));
+                }
+            });
+        }
 
         ~MetaSpaceImpl() override {
             for (const auto& value: m_owned_classes | std::views::values) {
@@ -108,7 +120,7 @@ namespace avalanche {
         }
     };
 
-    MetaSpace &MetaSpace::get() {
+    MetaSpace& MetaSpace::get() {
         static MetaSpaceImpl impl{};
         return impl;
     }

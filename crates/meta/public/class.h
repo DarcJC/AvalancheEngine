@@ -99,8 +99,22 @@ namespace avalanche {
             class_name_v<long double>,
             class_name_v<void*>,
         };
+        static constexpr size_t count = sizeof(value) / sizeof(const char*);
     };
 
     constexpr const char* const* fundamental_type_names_v = fundamental_type_names::value;
+
+    class AVALANCHE_META_INTERNAL PrimitiveClass : public Class {
+    public:
+        explicit PrimitiveClass(const char* name);
+
+        [[nodiscard]] std::string_view full_name() const override;
+        [[nodiscard]] const std::string& full_name_str() const override;
+        [[nodiscard]] size_t hash() const override;
+        void base_classes(int32_t& num_result, const char * const *& out_data) const override;
+
+    private:
+        const char* m_name = nullptr;
+    };
 
 } // namespace avalanche

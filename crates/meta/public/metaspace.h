@@ -22,8 +22,8 @@ namespace avalanche {
 
     struct AVALANCHE_META_API FNV1aHash {
 
-        [[nodiscard]] static constexpr uint32_t hash_32_fnv1a(std::string_view str) noexcept;
-        [[nodiscard]] static constexpr uint64_t hash_64_fnv1a(std::string_view str) noexcept;
+        [[nodiscard]] static uint32_t hash_32_fnv1a(std::string_view str) noexcept;
+        [[nodiscard]] static uint64_t hash_64_fnv1a(std::string_view str) noexcept;
 
         size_t operator()(std::string_view str) const noexcept;
     };
