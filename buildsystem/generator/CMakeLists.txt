@@ -40,3 +40,13 @@ macro(avalanche_generate_binding)
         target_sources(${PARSED_ARGS_TARGET} PRIVATE "${source_path}")
     endforeach ()
 endmacro()
+
+function(generate_enabled_modules_list)
+    get_property(enabled_modules GLOBAL PROPERTY AVALANCHE_ENABLED_MODULES)
+    set(output_path "${CMAKE_BINARY_DIR}/ExportHeaders/enabled_modules.h")
+    execute_process(
+            COMMAND "${Python3_EXECUTABLE}" -m generator module-list --output-file "${output_path}" --modules "${enabled_modules}"
+            WORKING_DIRECTORY "${AVALANCHE_CMAKE_ROOT_DIR}/buildsystem"
+            COMMAND_ERROR_IS_FATAL ANY
+    )
+endfunction()

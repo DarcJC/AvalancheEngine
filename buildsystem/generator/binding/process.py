@@ -114,7 +114,6 @@ class CxxHeaderFileProcessor:
 \n#include <array>\n#include <tuple>
 #include "class.h"\n#include "metaspace.h"\n#include "polyfill.h"
 #include "container/vector.hpp"\n#include "container/shared_ptr.hpp"\n#include "container/unique_ptr.hpp"\n
-EXTERN_MODULE_METASPACE({self._random_id});
 '''
         self._out_source = f'#include "{self._filepath}"'
         self._classes = []
@@ -190,7 +189,7 @@ avalanche::MetaSpaceProxy {self._random_id}_create_metaspace_internal__() {{
     {';'.join([f'result->register_class(new {clazz.metaclass_name}());' for clazz in self._registered_classes])}
     return result;
 }}
-avalanche::MetaSpaceProxy G_{self._random_id}_METASPACE_ = {self._random_id}_create_metaspace_internal__();
+static avalanche::MetaSpaceProxy G_{self._random_id}_METASPACE_ = {self._random_id}_create_metaspace_internal__();
 '''
         return template
 

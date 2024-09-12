@@ -32,3 +32,5 @@ include_directories(
 )
 
 add_subdirectory(crates)
+
+generate_enabled_modules_list()

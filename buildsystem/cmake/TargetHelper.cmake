@@ -1,4 +1,12 @@
 
+set_property(GLOBAL PROPERTY AVALANCHE_ENABLED_MODULES "")
+
+function(add_enabled_modules NAME)
+    get_property(prev GLOBAL PROPERTY AVALANCHE_ENABLED_MODULES)
+    list(APPEND prev "${NAME}")
+    set_property(GLOBAL PROPERTY AVALANCHE_ENABLED_MODULES "${prev}")
+endfunction()
+
 function(avalanche_target)
     set(options SHARED_LIBRARY STATIC_LIBRARY EXECUTABLE)
     set(one_value_args NAME)
@@ -23,6 +31,8 @@ function(avalanche_target)
         if (WIN32)
             set_target_properties("${target_name}" PROPERTIES WINDOWS_EXPORT_ALL_SYMBOLS ON)
         endif ()
+        set_target_properties("${target_name}" PROPERTIES POSITION_INDEPENDENT_CODE ON)
+        add_enabled_modules("${target_name}")
     elseif (PARSED_ARGS_STATIC_LIBRARY)
         add_library("${target_name}" STATIC "${PARSED_ARGS_SRCS}")
         add_library("avalanche::${PARSED_ARGS_NAME}" ALIAS "${target_name}")

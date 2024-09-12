@@ -12,6 +12,7 @@ set(sources
         "private/manager/server_manager.cpp"
         "private/manager/tick_manager.cpp"
         "private/event/named_event.cpp"
+        "private/manager/module_manager.cpp"
 )
 
 avalanche_target(
