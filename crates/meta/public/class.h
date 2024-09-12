@@ -81,4 +81,26 @@ namespace avalanche {
     template <> struct class_name<long double> { static constexpr const char* value = "long double"; static constexpr bool primitive = true; };
     template <> struct class_name<void*> { static constexpr const char* value = "void*"; static constexpr bool primitive = true; };
 
+    struct fundamental_type_names {
+        static constexpr const char* value[] = {
+            class_name_v<int8_t>,
+            class_name_v<int16_t>,
+            class_name_v<int32_t>,
+            class_name_v<int64_t>,
+            class_name_v<uint8_t>,
+            class_name_v<uint16_t>,
+            class_name_v<uint32_t>,
+            class_name_v<uint64_t>,
+            class_name_v<bool>,
+            class_name_v<char*>,
+            class_name_v<const char*>,
+            class_name_v<float>,
+            class_name_v<double>,
+            class_name_v<long double>,
+            class_name_v<void*>,
+        };
+    };
+
+    constexpr const char* const* fundamental_type_names_v = fundamental_type_names::value;
+
 } // namespace avalanche
