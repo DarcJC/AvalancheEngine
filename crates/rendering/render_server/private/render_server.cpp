@@ -39,10 +39,10 @@ namespace avalanche::rendering {
         AVALANCHE_CHECK_RUNTIME(false, "Can't not determine which GAPI to use");
     }
 
-    IRenderServer *IRenderServer::get() { return core::ServerManager::get().get_server_checked<IRenderServer>(); }
+    IRenderServer* IRenderServer::get() { return core::ServerManager::get().get_server_checked<IRenderServer>(); }
 
-    unique_ptr<IRenderServer> IRenderServer::create() {
-        return { make_unique<RenderServerImpl>() };
+    IRenderServer* IRenderServer::create() {
+        return new RenderServerImpl();
     }
 
 } // namespace avalanche::server

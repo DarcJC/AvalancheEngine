@@ -2,13 +2,18 @@ import re
 import random
 import string
 from functools import cached_property
-from typing import Optional, Literal
+from typing import Optional, Literal, Annotated
 from pathlib import Path
 
 import clang.cindex
 import tomli
+from pydantic import BaseModel, Field
 
 from .hash import FNV1a
+
+
+class GeneratorConfig(BaseModel):
+    default_factory: Annotated[Optional[str], Field(None)]
 
 
 class Class:
@@ -177,8 +182,8 @@ class CxxHeaderFileProcessor:
         if current_class.metadata is None and not current_class.derived_from_object:
             return
 
-        self.append_to_header(generate_metadata_struct(current_class))
         self.append_to_header(generate_constant_class_name(current_class))
+        self.append_to_header(generate_metadata_struct(current_class))
         self.append_to_source(generate_metaclass(current_class))
         self._registered_classes.append(current_class)
 
@@ -223,6 +228,8 @@ def generate_fields(metadata: Optional[dict]) -> str:
                        f'}} {k} {{}};\n')
         elif isinstance(v, list):
             result += f'std::tuple<{",".join(map(lambda x: BASE_TYPE_MAPS[type(x)], v))}> {k} = std::make_tuple({",".join(map(lambda x: str(int(x)) if type(x) == bool else str(x), v))});\n'
+        elif isinstance(v, str):
+            result += f'const char* {k} = "{v}";\n'
 
     return result
 
@@ -232,6 +239,10 @@ def generate_metadata_struct(current_class: Class) -> str:
 namespace avalanche::generated {{
     struct {current_class.display_name}MetadataType : metadata_tag {{
         {generate_fields(current_class.metadata)}
+        
+        [[nodiscard]] Class* get_class() const override {{
+            return Class::for_name(class_name_v<{current_class.fully_qualified_name}>);
+        }}
     }};
 }} // namespace avalanche::generated
     """

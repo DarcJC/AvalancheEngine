@@ -8,7 +8,11 @@
 
 namespace avalanche {
 
-    struct metadata_tag {};
+    struct metadata_tag {
+        virtual ~metadata_tag() = default;
+
+        [[nodiscard]] virtual class Class* get_class() const = 0;
+    };
 
     class AVALANCHE_META_API Object {
     public:
