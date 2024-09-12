@@ -16,6 +16,10 @@ class GeneratorConfig(BaseModel):
     default_factory: Annotated[Optional[str], Field(None)]
 
 
+class Method:
+    pass
+
+
 class Class:
     decl_cursor: clang.cindex.Cursor
 
@@ -240,7 +244,7 @@ namespace avalanche::generated {{
     struct {current_class.display_name}MetadataType : metadata_tag {{
         {generate_fields(current_class.metadata)}
         
-        [[nodiscard]] Class* get_class() const override {{
+        [[nodiscard]] Class* get_declaring_class() const override {{
             return Class::for_name(class_name_v<{current_class.fully_qualified_name}>);
         }}
     }};
@@ -304,6 +308,19 @@ class {current_class.metaclass_name} : public avalanche::Class {{
     
     size_t hash() const override {{
         return {current_class.type_hash}ULL;
+    }}
+    
+    void base_classes(int32_t& num_result, const char* const*& out_data) const override {{
+        static constexpr const char* base_classes_name[] {{
+            {',\n\t\t\t'.join([f'"{base_class.type.get_canonical().spelling}"' for base_class in current_class.base_classes_flatten])}
+        }};
+        constexpr int32_t num_base_classes = sizeof(base_classes_name) / sizeof(const char*);
+        num_result = num_base_classes;
+        out_data = base_classes_name;
+    }}
+    
+    [[nodiscard]] bool is_derived_from_object() const override {{
+        return {'true' if current_class.derived_from_object else 'false'};
     }}
 }};
 """
