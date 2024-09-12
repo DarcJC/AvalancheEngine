@@ -1,5 +1,7 @@
+#include <manager/module_manager.h>
 #include <manager/server_manager.h>
 #include <window_server.h>
+
 #include "engine.h"
 
 namespace avalanche {
@@ -23,6 +25,7 @@ namespace avalanche {
     Engine::Engine(const EngineDesc &desc)
         : m_create_desc(desc)
         , m_server_manager(ServerManager::create_non_static_manager()) {
+        ModuleManager::get().load_enabled_modules();
     }
 
     void Engine::poll() {}

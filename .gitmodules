@@ -8,3 +8,6 @@
 [submodule "thirdparty/glfw"]
 	path = thirdparty/glfw
 	url = https://github.com/glfw/glfw.git
+[submodule "thirdparty/dylib"]
+	path = thirdparty/dylib
+	url = https://github.com/martin-olivier/dylib.git
