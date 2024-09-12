@@ -263,6 +263,7 @@ namespace {namespace} {{
 template <>
 struct avalanche::class_name<{current_class.fully_qualified_name}> {{
     static constexpr const char* value = "{current_class.fully_qualified_name}";
+    static constexpr bool primitive = false;
 }};
 """
     return template
