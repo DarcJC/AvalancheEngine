@@ -332,7 +332,7 @@ def generate_fields_class(current_class: Class) -> str:
         result += f"""
 class {field.metaclass_name} : public avalanche::Field {{
 public:
-    Chimera get(Chimera object) override {{
+    Chimera get(Chimera object) const override {{
         assert(*get_declaring_class() == *object.get_class()); // Invalid instance type
         auto* obj = static_cast<{current_class.fully_qualified_name}*>(object.memory());
         Class* clazz = Class::for_name(class_name_v<std::remove_pointer_t<std::decay_t<{field.fully_qualified_name}>>>);
