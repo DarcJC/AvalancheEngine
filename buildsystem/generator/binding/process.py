@@ -16,8 +16,11 @@ class GeneratorConfig(BaseModel):
     default_factory: Annotated[Optional[str], Field(None)]
 
 
-class Method:
-    pass
+class ClassField:
+    decl_cursor: clang.cindex.Cursor
+
+    def __init__(self, cursor_of_decl: clang.cindex.Cursor):
+        self.decl_cursor = cursor_of_decl
 
 
 class Class:
@@ -98,6 +101,14 @@ class Class:
     @cached_property
     def type_hash(self) -> int:
         return FNV1a().hash_64_fnv1a(self.fully_qualified_name)
+
+    @cached_property
+    def fields(self) -> list[ClassField]:
+        result = []
+        for cursor in self.decl_cursor.get_children():
+            cursor: clang.cindex.Cursor
+            print(cursor.kind, cursor.spelling)
+        return result
 
 
 class CxxHeaderFileProcessor:
@@ -272,7 +283,9 @@ struct avalanche::class_name<{current_class.fully_qualified_name}> {{
 def parse_comment(raw_comment: str) -> Optional[dict]:
     matches = re.search(r'@avalanche::begin(.*?)@avalanche::end', raw_comment, re.DOTALL)
     if not matches:
-        return None
+        if '@reflect' not in raw_comment:
+            return None
+        return {}
     toml_text = matches.group(1).replace("///", "").strip()
     return tomli.loads(toml_text)
 
@@ -312,10 +325,10 @@ class {current_class.metaclass_name} : public avalanche::Class {{
     }}
     
     void base_classes(int32_t& num_result, const char* const*& out_data) const override {{
-        static constexpr const char* base_classes_name[] {{
+        constexpr int32_t num_base_classes = {len(current_class.base_classes_flatten)};
+        { f'''static constexpr const char*{ f""" base_classes_name[] {{
             {',\n\t\t\t'.join([f'"{base_class.type.get_canonical().spelling}"' for base_class in current_class.base_classes_flatten])}
-        }};
-        constexpr int32_t num_base_classes = sizeof(base_classes_name) / sizeof(const char*);
+        }}""" if current_class.base_classes_flatten else '* base_classes_name = nullptr'};''' }
         num_result = num_base_classes;
         out_data = base_classes_name;
     }}
