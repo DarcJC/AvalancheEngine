@@ -15,26 +15,43 @@ namespace avalanche {
 
     class AVALANCHE_META_API Object : public CanGetClassMixin {};
 
+    /// @brief Runtime information of a type
     class AVALANCHE_META_API Class : public HasMetadataMixin {
     public:
-        /**
-         * @brief Find class by name
-         * @param name full qualified class name
-         * @return nullptr if not found.
-         */
+        /// @brief Find class by name
+        /// @param name full qualified class name
+        /// @return nullptr if not found.
         static Class* for_name(std::string_view name);
 
+        /// @brief Fully qualified type name of this class
+        /// @return e.g. @code "avalanche::Object"@endcode
         [[nodiscard]] virtual std::string_view full_name() const = 0;
+        /// @brief Value is same as @code full_name()@endcode but returning as const string&
+        /// @return e.g. @code "avalanche::Object"@endcode
         [[nodiscard]] virtual const std::string& full_name_str() const = 0;
 
+        /// @brief Type hash of this class.
+        /// @note The probability of a collision is rare, but not impossible.
+        /// @return Value of type hash
         [[nodiscard]] virtual size_t hash() const = 0;
 
+        /// @brief Get the name of its base classes
+        /// @note You can use @code Class::for_name()@endcode to get class instance from name. But not all base classes is registered.
+        /// @param num_result Base classes count
+        /// @param out_data Name of base classes
         virtual void base_classes(int32_t& num_result, const char* const*& out_data) const = 0;
+        /// @brief Check if this class derived from the other class
+        /// @param name Fully qualified name of base class
         [[nodiscard]] virtual bool is_derived_from(std::string_view name) const;
+        /// @brief Check if this class derived from 'avalanche::Object'
         [[nodiscard]] virtual bool is_derived_from_object() const;
 
+        /// @brief Is fundamental types of C/C++. Like @code int8_t, int16_t, ...@endcode.
         [[nodiscard]] virtual bool is_primitive_type() const;
 
+        /// @brief Comparing if two @code Class@endcode is same
+        /// @return Currently, @code true@endcode if memory address is same or @code full_name()@endcode is same.
+        /// @note Comparing hash might be fast, but I don't want to deal with the collisions.
         [[nodiscard]] virtual bool equals_to(const Class& other) const;
         bool operator==(const Class& other) const;
         bool operator!=(const Class &) const;
