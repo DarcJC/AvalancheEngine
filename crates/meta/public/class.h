@@ -61,10 +61,8 @@ namespace avalanche {
     struct class_name {
 #if DURING_BUILD_TOOL_PROCESS
         static constexpr const char* value = "<default_for_generator>";
-#else
-        static constexpr const char* value = nullptr;
-#endif
         static constexpr bool primitive = false;
+#endif
     };
 
     template <typename T>

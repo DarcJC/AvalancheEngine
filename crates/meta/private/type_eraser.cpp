@@ -7,12 +7,22 @@ namespace avalanche {
     Chimera::Chimera() : m_value({.object = nullptr}), m_is_object(true), m_is_struct(false) {}
 
     Chimera::Chimera(ScopedStruct *scoped_struct_) :
-        m_value({.scoped_struct = scoped_struct_}), m_is_struct(true), m_is_object(false) {}
+        m_value({.scoped_struct = scoped_struct_}), m_is_object(false), m_is_struct(true) {}
 
     Chimera::Chimera(Object *object_) : m_value({.object = object_}), m_is_object(true), m_is_struct(false) {}
 
+    Chimera::Chimera(const Chimera& other) {
+        if (other.m_is_object) {
+            m_value.object = other.m_value.object;
+        } else if (other.m_is_struct) {
+            m_value.scoped_struct = other.m_value.scoped_struct;
+        }
+        m_is_object = other.m_is_object;
+        m_is_struct = other.m_is_struct;
+    }
+
     Class *Chimera::get_class() const {
-        if (reinterpret_cast<const void *>(&m_value) == nullptr) {
+        if (!is_valid()) {
             return nullptr;
         }
 
@@ -39,7 +49,7 @@ namespace avalanche {
         return nullptr;
     }
 
-    void const* Chimera::memory() const {
+    void const *Chimera::memory() const {
         if (m_is_object) {
             return m_value.object;
         }
@@ -49,6 +59,10 @@ namespace avalanche {
         }
 
         return nullptr;
+    }
+
+    bool Chimera::is_valid() const {
+        return reinterpret_cast<const void *>(&m_value) != nullptr;
     }
 
 } // namespace avalanche

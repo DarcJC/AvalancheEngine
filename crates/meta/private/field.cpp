@@ -5,4 +5,5 @@
 #include "field.h"
 
 namespace avalanche {
+
 } // avalanche

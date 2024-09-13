@@ -81,3 +81,5 @@ namespace avalanche::window {
     };
 
 }
+
+#include "window_server.generated.h"
