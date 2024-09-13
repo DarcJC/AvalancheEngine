@@ -11,14 +11,16 @@ namespace avalanche {
 
     Chimera::Chimera(Object *object_) : m_value({.object = object_}), m_is_object(true), m_is_struct(false) {}
 
-    Chimera::Chimera(const Chimera& other) {
-        if (other.m_is_object) {
-            m_value.object = other.m_value.object;
-        } else if (other.m_is_struct) {
-            m_value.scoped_struct = other.m_value.scoped_struct;
-        }
-        m_is_object = other.m_is_object;
+    Chimera::Chimera(Chimera&& other) noexcept {
+        reset();
+        m_value = other.m_value;
         m_is_struct = other.m_is_struct;
+        m_is_object = other.m_is_object;
+        other.reset();
+    }
+
+    Chimera::~Chimera() {
+        reset();
     }
 
     Class *Chimera::get_class() const {
@@ -61,8 +63,15 @@ namespace avalanche {
         return nullptr;
     }
 
-    bool Chimera::is_valid() const {
-        return reinterpret_cast<const void *>(&m_value) != nullptr;
+    bool Chimera::is_valid() const { return reinterpret_cast<const void *>(&m_value) != nullptr; }
+
+    void Chimera::reset() {
+        if (m_is_struct) {
+            delete m_value.scoped_struct;
+        }
+        m_value.object = nullptr;
+        m_is_struct = false;
+        m_is_object = true;
     }
 
 } // namespace avalanche

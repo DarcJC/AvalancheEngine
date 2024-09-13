@@ -16,14 +16,7 @@ class GeneratorConfig(BaseModel):
     default_factory: Annotated[Optional[str], Field(None)]
 
 
-class ClassField:
-    decl_cursor: clang.cindex.Cursor
-
-    def __init__(self, cursor_of_decl: clang.cindex.Cursor):
-        self.decl_cursor = cursor_of_decl
-
-
-class Class:
+class CommonBase:
     decl_cursor: clang.cindex.Cursor
 
     def __init__(self, cursor_of_decl: clang.cindex.Cursor):
@@ -50,6 +43,42 @@ class Class:
     @cached_property
     def display_name(self) -> str:
         return self.decl_cursor.spelling
+
+    @cached_property
+    def camel_case_name(self):
+        fullname = self.fully_qualified_name
+        # split by '::'
+        parts = fullname.split('::')
+        # Capitalizing the first char
+        capitalized_parts = [part.capitalize() for part in parts]
+        # Join parts
+        camel_case_string = ''.join(capitalized_parts)
+        return camel_case_string
+
+    @cached_property
+    def metaclass_name(self) -> str:
+        return f'{self.camel_case_name}MetaClass__internal__'
+
+    @cached_property
+    def type_hash(self) -> int:
+        return FNV1a().hash_64_fnv1a(self.fully_qualified_name)
+
+
+class ClassField(CommonBase):
+    parent_class: 'Class'
+
+    def __init__(self, cursor_of_decl: clang.cindex.Cursor, parent_class: 'Class'):
+        super().__init__(cursor_of_decl)
+        self.parent_class = parent_class
+
+    @cached_property
+    def metaclass_name(self) -> str:
+        return f'{self.parent_class.camel_case_name}_of_{self.display_name}MetaField__internal__'
+
+
+class Class(CommonBase):
+    def __init__(self, cursor_of_decl: clang.cindex.Cursor):
+        super().__init__(cursor_of_decl)
 
     @cached_property
     def kind(self) -> Literal['class', 'struct', 'union']:
@@ -84,30 +113,12 @@ class Class:
         return 'avalanche::Object' in [cursor.type.get_canonical().spelling for cursor in self.base_classes_flatten]
 
     @cached_property
-    def camel_case_name(self):
-        fullname = self.fully_qualified_name
-        # split by '::'
-        parts = fullname.split('::')
-        # Capitalizing the first char
-        capitalized_parts = [part.capitalize() for part in parts]
-        # Join parts
-        camel_case_string = ''.join(capitalized_parts)
-        return camel_case_string
-
-    @cached_property
-    def metaclass_name(self) -> str:
-        return f'{self.camel_case_name}MetaClass__internal__'
-
-    @cached_property
-    def type_hash(self) -> int:
-        return FNV1a().hash_64_fnv1a(self.fully_qualified_name)
-
-    @cached_property
     def fields(self) -> list[ClassField]:
         result = []
         for cursor in self.decl_cursor.get_children():
             cursor: clang.cindex.Cursor
-            print(cursor.kind, cursor.spelling)
+            if cursor.kind == clang.cindex.CursorKind.FIELD_DECL:
+                result.append(ClassField(cursor, self))
         return result
 
 
@@ -132,10 +143,10 @@ class CxxHeaderFileProcessor:
         self._out_header = f'''#pragma once
 #pragma warning (disable: 4244)
 \n#include <array>\n#include <tuple>
-#include "class.h"\n#include "metaspace.h"\n#include "polyfill.h"
+#include "class.h"\n#include "metaspace.h"\n#include "field.h"\n#include "polyfill.h"
 #include "container/vector.hpp"\n#include "container/shared_ptr.hpp"\n#include "container/unique_ptr.hpp"\n
 '''
-        self._out_source = f'#include "{self._filepath}"'
+        self._out_source = f'#include <cassert>\n#include "{self._filepath}"\n\nusing namespace avalanche;'
         self._classes = []
         self._registered_classes = []
 
@@ -198,15 +209,16 @@ class CxxHeaderFileProcessor:
             return
 
         self.append_to_header(generate_constant_class_name(current_class))
-        self.append_to_header(generate_metadata_struct(current_class))
+        self.append_to_header(generate_class_metadata_struct(current_class))
         self.append_to_source(generate_metaclass(current_class))
         self._registered_classes.append(current_class)
+        _ = current_class.fields
 
     def generate_metaspace_storage(self):
         template = f'''
 avalanche::MetaSpaceProxy {self._random_id}_create_metaspace_internal__() {{
     auto result = avalanche::MetaSpace::get().create();
-    {';'.join([f'result->register_class(new {clazz.metaclass_name}());' for clazz in self._registered_classes])}
+    {'\n\t'.join([f'result->register_class(new {clazz.metaclass_name}());' for clazz in self._registered_classes])}
     return result;
 }}
 static avalanche::MetaSpaceProxy G_{self._random_id}_METASPACE_ = {self._random_id}_create_metaspace_internal__();
@@ -228,7 +240,7 @@ def extract_namespace(spelling: str) -> (str, str):
     return "", spelling
 
 
-def generate_fields(metadata: Optional[dict]) -> str:
+def generate_metadata_fields(metadata: Optional[dict]) -> str:
     metadata = metadata or {}
     result = ""
     for (k, v) in metadata.items():
@@ -239,7 +251,7 @@ def generate_fields(metadata: Optional[dict]) -> str:
             result += f"{BASE_TYPE_MAPS[value_type]} {k} = {'true' if v else 'false'};\n"
         elif isinstance(v, dict):
             result += (f'struct {{\n'
-                       f'   {generate_fields(v)}'
+                       f'   {generate_metadata_fields(v)}'
                        f'}} {k} {{}};\n')
         elif isinstance(v, list):
             result += f'std::tuple<{",".join(map(lambda x: BASE_TYPE_MAPS[type(x)], v))}> {k} = std::make_tuple({",".join(map(lambda x: str(int(x)) if type(x) == bool else str(x), v))});\n'
@@ -249,11 +261,11 @@ def generate_fields(metadata: Optional[dict]) -> str:
     return result
 
 
-def generate_metadata_struct(current_class: Class) -> str:
+def generate_class_metadata_struct(current_class: Class) -> str:
     template = f"""
 namespace avalanche::generated {{
     struct {current_class.display_name}MetadataType : metadata_tag {{
-        {generate_fields(current_class.metadata)}
+        {generate_metadata_fields(current_class.metadata)}
         
         [[nodiscard]] Class* get_declaring_class() const override {{
             return Class::for_name(class_name_v<{current_class.fully_qualified_name}>);
@@ -308,9 +320,36 @@ def get_base_classes_of_type(cursor: clang.cindex.Cursor) -> list[clang.cindex.C
     return result
 
 
+def generate_fields_class(current_class: Class) -> str:
+    result = ""
+    for field in current_class.fields:
+        if field.metadata is None:
+            continue
+        result += f"""
+class {field.metaclass_name} : public avalanche::Field {{
+public:
+    Chimera get(Chimera object) override {{
+        assert(*get_declaring_class() == *object.get_class()); // Invalid instance type
+        auto* obj = static_cast<{current_class.fully_qualified_name}*>(object.memory());
+        // return {{ new ScopedStructContainer<{field.fully_qualified_name}*>(&obj->{field.display_name}) }};
+        return {{}};
+    }}
+    
+    [[nodiscard]] Class* get_declaring_class() const override {{
+        return Class::for_name(class_name_v<{current_class.fully_qualified_name}>);
+    }}
+}};
+"""
+
+    return result
+
+
 def generate_metaclass(current_class: Class) -> str:
     template = f"""
+{generate_fields_class(current_class)}
+
 class {current_class.metaclass_name} : public avalanche::Class {{
+public:
     std::string_view full_name() const override {{
         return full_name_str();
     }}
@@ -335,6 +374,10 @@ class {current_class.metaclass_name} : public avalanche::Class {{
     
     [[nodiscard]] bool is_derived_from_object() const override {{
         return {'true' if current_class.derived_from_object else 'false'};
+    }}
+    
+    void fields(int32_t& num_result, const avalanche::Field* const*& out_data) const override {{
+        constexpr int32_t num_base_classes = {len(current_class.fields)};
     }}
 }};
 """

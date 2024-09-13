@@ -47,7 +47,8 @@ namespace avalanche {
     /// @brief A tag used to allow creating uninitiated value inside container
     struct no_explicit_init_t {};
 
-    template <has_class_name T>
+    template <typename T>
+    requires has_class_name<std::remove_pointer<std::decay_t<T>>>
     class ScopedStructContainer : public ScopedStruct {
     public:
         /// @code
@@ -61,7 +62,8 @@ namespace avalanche {
 
         using storage_value_t = std::conditional_t<detail::is_pointer_reference<T>::value, std::decay_t<T>, T>;
 
-        template <std::default_initializable = T>
+        template <typename = T>
+        requires std::default_initializable
         explicit ScopedStructContainer(no_explicit_init_t) {}
 
         template <typename U = T>
@@ -153,7 +155,9 @@ namespace avalanche {
         Chimera();
         explicit Chimera(ScopedStruct* scoped_struct_);
         explicit Chimera(Object* object_);
-        Chimera(const Chimera& other);
+        Chimera(Chimera&& other) noexcept;
+
+        ~Chimera() override;
 
         [[nodiscard]] Class* get_class() const override;
 
@@ -161,6 +165,8 @@ namespace avalanche {
         [[nodiscard]] void const* memory() const override;
 
         [[nodiscard]] bool is_valid() const;
+
+        void reset();
 
     private:
         union {

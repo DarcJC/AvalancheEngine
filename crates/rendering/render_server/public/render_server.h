@@ -29,6 +29,14 @@ namespace avalanche::rendering {
         CanRenderOnMixin& object_been_render_on;
     };
 
+    /// @reflect
+    struct TestData {
+        /// @reflect
+        uint32_t field1;
+        /// @reflect
+        IRenderServer* field2;
+    };
+
 } // namespace avalanche::server
 
 #include "render_server.generated.h"

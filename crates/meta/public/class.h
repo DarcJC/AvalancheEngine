@@ -39,7 +39,7 @@ namespace avalanche {
         /// @note You can use @code Class::for_name()@endcode to get class instance from name. But not all base classes is registered.
         /// @param num_result Base classes count
         /// @param out_data Name of base classes
-        virtual void base_classes(int32_t& num_result, const char* const*& out_data) const = 0;
+        virtual void base_classes(int32_t& num_result, const char* const*& out_data) const;
         /// @brief Check if this class derived from the other class
         /// @param name Fully qualified name of base class
         [[nodiscard]] virtual bool is_derived_from(std::string_view name) const;
@@ -48,6 +48,12 @@ namespace avalanche {
 
         /// @brief Is fundamental types of C/C++. Like @code int8_t, int16_t, ...@endcode.
         [[nodiscard]] virtual bool is_primitive_type() const;
+
+        /// @brief Get fields
+        /// @note Only reflected fields will be listed here.
+        /// @param num_result Field count
+        /// @param out_data
+        virtual void fields(int32_t& num_result, const Field* const*& out_data) const;
 
         /// @brief Comparing if two @code Class@endcode is same
         /// @return Currently, @code true@endcode if memory address is same or @code full_name()@endcode is same.
@@ -84,7 +90,9 @@ namespace avalanche {
     };
 
     template <typename T>
-    concept has_class_name = class_name_v<T> != nullptr;
+    concept has_class_name = requires {
+        class_name_v<T>;
+    };
 
 
     /// Declaring class name of fundamental types
@@ -134,7 +142,6 @@ namespace avalanche {
         [[nodiscard]] std::string_view full_name() const override;
         [[nodiscard]] const std::string& full_name_str() const override;
         [[nodiscard]] size_t hash() const override;
-        void base_classes(int32_t& num_result, const char * const *& out_data) const override;
         [[nodiscard]] bool is_primitive_type() const override;
 
     private:

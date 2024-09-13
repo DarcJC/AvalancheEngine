@@ -5,6 +5,11 @@ namespace avalanche {
 
     Class *Class::for_name(const std::string_view name) { return MetaSpace::get().find_class(name); }
 
+    void Class::base_classes(int32_t& num_result, const char *const *& out_data) const {
+        num_result = 0;
+        out_data = nullptr;
+    }
+
     bool Class::is_derived_from(const std::string_view name) const {
         int32_t num;
         const char * const* result;
@@ -22,6 +27,11 @@ namespace avalanche {
     bool Class::is_derived_from_object() const { return is_derived_from("avalanche::Object"); }
 
     bool Class::is_primitive_type() const { return false; }
+
+    void Class::fields(int32_t &num_result, const Field *const *&out_data) const {
+        num_result = 0;
+        out_data = nullptr;
+    }
 
     bool Class::equals_to(const Class &other) const {
         if (&other == this)
@@ -44,11 +54,6 @@ namespace avalanche {
 
     size_t PrimitiveClass::hash() const {
         return FNV1aHash::hash_64_fnv1a(full_name());
-    }
-
-    void PrimitiveClass::base_classes(int32_t &num_result, const char *const *&out_data) const {
-        num_result = 0;
-        out_data = nullptr;
     }
 
     bool PrimitiveClass::is_primitive_type() const { return true; }
