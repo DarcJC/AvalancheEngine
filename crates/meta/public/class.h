@@ -9,6 +9,8 @@
 
 namespace avalanche {
 
+    class Field;
+
     struct metadata_tag : CanGetDeclaringClassMixin {};
 
     class AVALANCHE_META_API Object : public CanGetClassMixin {};
@@ -32,6 +34,10 @@ namespace avalanche {
         [[nodiscard]] virtual bool is_derived_from_object() const;
 
         [[nodiscard]] virtual bool is_primitive_type() const;
+
+        [[nodiscard]] virtual bool equals_to(const Class& other) const;
+        bool operator==(const Class& other) const;
+        bool operator!=(const Class &) const;
     };
 
     template <typename>

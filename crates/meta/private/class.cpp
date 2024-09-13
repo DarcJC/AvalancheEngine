@@ -21,9 +21,18 @@ namespace avalanche {
 
     bool Class::is_derived_from_object() const { return is_derived_from("avalanche::Object"); }
 
-    bool Class::is_primitive_type() const {
-        return false;
+    bool Class::is_primitive_type() const { return false; }
+
+    bool Class::equals_to(const Class &other) const {
+        if (&other == this)
+            return true;
+
+        return other.full_name() == full_name();
     }
+
+    bool Class::operator==(const Class& other) const { return equals_to(other); }
+
+    bool Class::operator!=(const Class& other) const { return !(*this == other); }
 
     PrimitiveClass::PrimitiveClass(const char* name) : m_name(name), m_name_str(name) {}
 
