@@ -30,6 +30,8 @@ namespace avalanche {
         virtual void base_classes(int32_t& num_result, const char* const*& out_data) const = 0;
         [[nodiscard]] virtual bool is_derived_from(std::string_view name) const;
         [[nodiscard]] virtual bool is_derived_from_object() const;
+
+        [[nodiscard]] virtual bool is_primitive_type() const;
     };
 
     template <typename>
@@ -112,9 +114,11 @@ namespace avalanche {
         [[nodiscard]] const std::string& full_name_str() const override;
         [[nodiscard]] size_t hash() const override;
         void base_classes(int32_t& num_result, const char * const *& out_data) const override;
+        [[nodiscard]] bool is_primitive_type() const override;
 
     private:
         const char* m_name = nullptr;
+        std::string m_name_str;
     };
 
 } // namespace avalanche

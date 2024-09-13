@@ -20,12 +20,12 @@ include(CMakeDependentOption)
 include(GenerateExportHeader)
 include(CMakeParseArguments)
 
+add_subdirectory(buildsystem/generator)
+
 # Project defined cmake modules
 include(buildsystem/cmake/SetupPython.cmake)
 include(buildsystem/cmake/TargetHelper.cmake)
 include(buildsystem/cmake/Options.cmake)
-
-add_subdirectory(buildsystem/generator)
 
 include_directories(
         AFTER ${CMAKE_BINARY_DIR}/ExportHeaders

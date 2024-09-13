@@ -11,7 +11,6 @@
 
 
 namespace avalanche {
-
     uint32_t FNV1aHash::hash_32_fnv1a(const std::string_view str) noexcept {
         uint32_t hash = detail::FNV1aInternal<uint32_t>::val;
         for (const unsigned char c : str) {
@@ -49,9 +48,8 @@ namespace avalanche {
 
         MetaSpaceImpl() {
             // Register primitive types in the global metaspace
-            static std::once_flag flag;
-
-            std::call_once(flag, [this] {
+            static std::once_flag PRIMITIVE_REGISTER_ONCE;
+            std::call_once(PRIMITIVE_REGISTER_ONCE, [this] {
                 for (size_t i = 0; i < fundamental_type_names::count; ++i) {
                     register_class(new PrimitiveClass(fundamental_type_names_v[i]));
                 }

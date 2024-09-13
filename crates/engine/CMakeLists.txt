@@ -6,6 +6,7 @@ avalanche_target(
         NAME engine
         SHARED_LIBRARY
         SRCS ${ENGINE_SOURCE}
+        REFLECTION
 )
 
 target_link_libraries(avalanche_engine

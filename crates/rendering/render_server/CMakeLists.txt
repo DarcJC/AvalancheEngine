@@ -3,6 +3,7 @@ avalanche_target(
         NAME render_server
         SHARED_LIBRARY
         SRCS "private/render_server.cpp"
+        REFLECTION
 )
 
 target_link_libraries(avalanche_render_server
@@ -20,8 +21,3 @@ if (AVALANCHE_ENABLE_VULKAN)
             AVALANCHE_ENABLE_VULKAN=1
     )
 endif ()
-
-avalanche_generate_binding(
-        TARGET avalanche_render_server
-        SRCS "public/render_server.h"
-)

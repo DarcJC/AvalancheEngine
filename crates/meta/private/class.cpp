@@ -21,13 +21,16 @@ namespace avalanche {
 
     bool Class::is_derived_from_object() const { return is_derived_from("avalanche::Object"); }
 
-    PrimitiveClass::PrimitiveClass(const char *name) : m_name(name) {}
+    bool Class::is_primitive_type() const {
+        return false;
+    }
+
+    PrimitiveClass::PrimitiveClass(const char* name) : m_name(name), m_name_str(name) {}
 
     std::string_view PrimitiveClass::full_name() const { return full_name_str(); }
 
-    const std::string &PrimitiveClass::full_name_str() const {
-        static std::string s(m_name);
-        return s;
+    const std::string& PrimitiveClass::full_name_str() const {
+        return m_name_str;
     }
 
     size_t PrimitiveClass::hash() const {
@@ -38,6 +41,8 @@ namespace avalanche {
         num_result = 0;
         out_data = nullptr;
     }
+
+    bool PrimitiveClass::is_primitive_type() const { return true; }
 
 }
 

@@ -8,7 +8,7 @@ function(add_enabled_modules NAME)
 endfunction()
 
 function(avalanche_target)
-    set(options SHARED_LIBRARY STATIC_LIBRARY EXECUTABLE)
+    set(options SHARED_LIBRARY STATIC_LIBRARY EXECUTABLE REFLECTION)
     set(one_value_args NAME)
     set(multi_value_args SRCS)
     cmake_parse_arguments(
@@ -64,4 +64,16 @@ function(avalanche_target)
     )
 
     set(AVALANCHE_TARGET_${NAME_UPPER} PARENT_SCOPE ${target_name})
+
+    if (PARSED_ARGS_REFLECTION)
+        file(GLOB_RECURSE public_header_files
+                "public/*.h"
+                "public/*.hpp"
+        )
+
+        avalanche_generate_binding(
+                TARGET ${target_name}
+                SRCS ${public_header_files}
+        )
+    endif (PARSED_ARGS_REFLECTION)
 endfunction()

@@ -19,6 +19,7 @@ avalanche_target(
         SHARED_LIBRARY
         NAME "core"
         SRCS ${sources}
+        REFLECTION
 )
 
 target_link_libraries(avalanche_core PUBLIC avalanche::meta)

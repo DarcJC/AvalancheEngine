@@ -9,6 +9,7 @@ avalanche_target(
         NAME render_device
         SHARED_LIBRARY
         SRCS ${RENDER_DEVICE_SOURCE}
+        REFLECTION
 )
 
 target_link_libraries(avalanche_render_device PUBLIC avalanche::core)

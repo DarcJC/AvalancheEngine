@@ -20,6 +20,7 @@ namespace avalanche::rendering {
         AVALANCHE_NO_DISCARD static IRenderServer* get();
         AVALANCHE_NO_DISCARD static IRenderServer* create();
 
+        /// @brief Pushing a frame job into rendering queue
         virtual void queue_frame_to_render(uint64_t unique_invokee_id, CanRenderOnMixin& object_been_render_on) = 0;
     };
 
