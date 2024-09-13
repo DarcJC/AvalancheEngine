@@ -71,6 +71,23 @@ namespace avalanche {
 #endif
     };
 
+    /// Declaring class name of fundamental types
+    template <> struct class_name<int8_t> { static constexpr const char* value = "int8"; static constexpr bool primitive = true; };
+    template <> struct class_name<int16_t> { static constexpr const char* value = "int16"; static constexpr bool primitive = true; };
+    template <> struct class_name<int32_t> { static constexpr const char* value = "int32"; static constexpr bool primitive = true; };
+    template <> struct class_name<int64_t> { static constexpr const char* value = "int64"; static constexpr bool primitive = true; };
+    template <> struct class_name<uint8_t> { static constexpr const char* value = "uint8"; static constexpr bool primitive = true; };
+    template <> struct class_name<uint16_t> { static constexpr const char* value = "uint16"; static constexpr bool primitive = true; };
+    template <> struct class_name<uint32_t> { static constexpr const char* value = "uint32"; static constexpr bool primitive = true; };
+    template <> struct class_name<uint64_t> { static constexpr const char* value = "uint64"; static constexpr bool primitive = true; };
+    template <> struct class_name<bool> { static constexpr const char* value = "bool"; static constexpr bool primitive = true; };
+    template <> struct class_name<char*> { static constexpr const char* value = "char*"; static constexpr bool primitive = true; };
+    template <> struct class_name<const char*> { static constexpr const char* value = "const char*"; static constexpr bool primitive = true; };
+    template <> struct class_name<float> { static constexpr const char* value = "float"; static constexpr bool primitive = true; };
+    template <> struct class_name<double> { static constexpr const char* value = "double"; static constexpr bool primitive = true; };
+    template <> struct class_name<long double> { static constexpr const char* value = "long double"; static constexpr bool primitive = true; };
+    template <> struct class_name<void*> { static constexpr const char* value = "void*"; static constexpr bool primitive = true; };
+
     template <typename T>
     constexpr const char* class_name_v = class_name<T>::value;
 
@@ -93,24 +110,6 @@ namespace avalanche {
     concept has_class_name = requires {
         class_name_v<T>;
     };
-
-
-    /// Declaring class name of fundamental types
-    template <> struct class_name<int8_t> { static constexpr const char* value = "int8"; static constexpr bool primitive = true; };
-    template <> struct class_name<int16_t> { static constexpr const char* value = "int16"; static constexpr bool primitive = true; };
-    template <> struct class_name<int32_t> { static constexpr const char* value = "int32"; static constexpr bool primitive = true; };
-    template <> struct class_name<int64_t> { static constexpr const char* value = "int64"; static constexpr bool primitive = true; };
-    template <> struct class_name<uint8_t> { static constexpr const char* value = "uint8"; static constexpr bool primitive = true; };
-    template <> struct class_name<uint16_t> { static constexpr const char* value = "uint16"; static constexpr bool primitive = true; };
-    template <> struct class_name<uint32_t> { static constexpr const char* value = "uint32"; static constexpr bool primitive = true; };
-    template <> struct class_name<uint64_t> { static constexpr const char* value = "uint64"; static constexpr bool primitive = true; };
-    template <> struct class_name<bool> { static constexpr const char* value = "bool"; static constexpr bool primitive = true; };
-    template <> struct class_name<char*> { static constexpr const char* value = "char*"; static constexpr bool primitive = true; };
-    template <> struct class_name<const char*> { static constexpr const char* value = "const char*"; static constexpr bool primitive = true; };
-    template <> struct class_name<float> { static constexpr const char* value = "float"; static constexpr bool primitive = true; };
-    template <> struct class_name<double> { static constexpr const char* value = "double"; static constexpr bool primitive = true; };
-    template <> struct class_name<long double> { static constexpr const char* value = "long double"; static constexpr bool primitive = true; };
-    template <> struct class_name<void*> { static constexpr const char* value = "void*"; static constexpr bool primitive = true; };
 
     struct fundamental_type_names {
         static constexpr const char* value[] = {

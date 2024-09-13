@@ -63,6 +63,10 @@ class CommonBase:
     def type_hash(self) -> int:
         return FNV1a().hash_64_fnv1a(self.fully_qualified_name)
 
+    @cached_property
+    def current_type_spelling(self) -> str:
+        return self.decl_cursor.type.spelling
+
 
 class ClassField(CommonBase):
     parent_class: 'Class'
@@ -331,8 +335,9 @@ public:
     Chimera get(Chimera object) override {{
         assert(*get_declaring_class() == *object.get_class()); // Invalid instance type
         auto* obj = static_cast<{current_class.fully_qualified_name}*>(object.memory());
-        // return {{ new ScopedStructContainer<{field.fully_qualified_name}*>(&obj->{field.display_name}) }};
-        return {{}};
+        Class* clazz = Class::for_name(class_name_v<std::remove_pointer_t<std::decay_t<{field.fully_qualified_name}>>>);
+        ScopedStruct* container = new FieldProxyStruct(&obj->{field.display_name}, clazz);
+        return Chimera {{ container, true }};
     }}
     
     [[nodiscard]] Class* get_declaring_class() const override {{
@@ -377,7 +382,13 @@ public:
     }}
     
     void fields(int32_t& num_result, const avalanche::Field* const*& out_data) const override {{
-        constexpr int32_t num_base_classes = {len(current_class.fields)};
+        constexpr int32_t num_fields = {len(current_class.fields)};
+        {'\n\t\t'.join([f'static {field.metaclass_name} {field.metaclass_name}_inst{{}};' for field in current_class.fields])}
+        { f"""static constexpr const Field*{ f""" fields[] {{
+            {',\n\t\t\t'.join([f'&{field.metaclass_name}_inst' for field in current_class.fields])}
+        }}""" if current_class.fields else "* fields = nullptr" };"""}
+        num_result = num_fields;
+        out_data = fields;
     }}
 }};
 """

@@ -41,14 +41,14 @@ namespace avalanche {
         /// Reference is safe to cast to pointer with same type.
         /// @note There is no way to get info from a @code typename@endcode at runtime.
         /// @note So we only have the limited and generated knowledge in type casting.
-        [[nodiscard]] virtual bool convertible_from(const ScopedStruct& other) const = 0;
+        [[nodiscard]] virtual bool convertible_from(const ScopedStruct& other) const;
     };
 
     /// @brief A tag used to allow creating uninitiated value inside container
     struct no_explicit_init_t {};
 
     template <typename T>
-    requires has_class_name<std::remove_pointer<std::decay_t<T>>>
+    requires has_class_name<std::remove_pointer_t<std::decay_t<T>>>
     class ScopedStructContainer : public ScopedStruct {
     public:
         /// @code
@@ -130,32 +130,43 @@ namespace avalanche {
             return qualifiers;
         }
 
-        [[nodiscard]] bool convertible_from(const ScopedStruct& other) const override {
-            // Return false if not the same type
-            if (*get_class() != *other.get_class()) return false;
+        storage_value_t m_value;
+    };
 
-            const TypeQualifiers self_qualifiers = qualifiers();
-            const TypeQualifiers other_qualifiers = other.qualifiers();
+    class FieldProxyStruct : public ScopedStruct {
+    public:
+        FieldProxyStruct(void* proxied_memory_, Class* clazz_);
 
-            // Return true if qualifiers is same
-            if (self_qualifiers == other_qualifiers) return true;
+        [[nodiscard]] Class* get_class() const override;
 
-            // T& -> T*
-            if (other_qualifiers.reference && self_qualifiers.pointer) return true;
-
-            return false;
+        void* memory() override {
+            return m_proxied_memory;
         }
 
-        storage_value_t m_value;
+        [[nodiscard]] void const* memory() const override {
+            return m_proxied_memory;
+        }
+
+        [[nodiscard]] TypeQualifiers qualifiers() const override {
+            return {
+                .pointer = true,
+            };
+        }
+
+    private:
+        void* m_proxied_memory = nullptr;
+        Class* m_class = nullptr;
     };
 
     /// @brief Merging struct and object to a single type
     class AVALANCHE_META_API Chimera : public CanGetClassMixin, public ManageMemoryMixin {
     public:
         Chimera();
-        explicit Chimera(ScopedStruct* scoped_struct_);
-        explicit Chimera(Object* object_);
+        explicit Chimera(ScopedStruct* scoped_struct_, bool managed_ = false);
+        explicit Chimera(Object* object_, bool managed_ = false);
         Chimera(Chimera&& other) noexcept;
+
+        Chimera& operator=(Chimera&& other) noexcept;
 
         ~Chimera() override;
 
@@ -165,18 +176,23 @@ namespace avalanche {
         [[nodiscard]] void const* memory() const override;
 
         [[nodiscard]] bool is_valid() const;
+        [[nodiscard]] bool is_managed() const;
 
-        void reset();
+        /// @brief Release memory if @code is_managed()@endcode is true
+        /// @note Do nothing if @code is_managed() == false@endcode
+        void release();
+        void swap(Chimera& other) noexcept;
 
     private:
         union {
             Object* object;
             ScopedStruct* scoped_struct;
         } m_value{};
-        uint8_t m_is_object: 1 = false;
-        uint8_t m_is_struct: 1 = false;
-        uint16_t padding_0 = 0;
-        uint32_t padding_1 = 0;
+        struct {
+            uint64_t m_is_object: 1 = false;
+            uint64_t m_is_struct: 1 = false;
+            uint64_t m_managed_memory: 1 = false;
+        } m_flags;
     };
 
 } // namespace avalanche
