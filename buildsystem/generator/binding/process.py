@@ -86,6 +86,33 @@ class CommonBase:
         return f"{location.file}({location.line}:{location.column})"
 
 
+class Method(CommonBase):
+    parent_class: 'Class'
+
+    def __init__(self, cursor_of_decl: clang.cindex.Cursor, parent_class: 'Class'):
+        super().__init__(cursor_of_decl)
+        self.parent_class = parent_class
+
+    @cached_property
+    def return_type(self) -> clang.cindex.Type:
+        return self.decl_cursor.result_type
+
+    @cached_property
+    def params(self) -> list[clang.cindex.Cursor]:
+        result = []
+        for child in self.decl_cursor.get_children():
+            if child.kind == clang.cindex.CursorKind.PARM_DECL:
+                result.append(child)
+        return result
+
+    @cached_property
+    def metaclass_name(self) -> str:
+        return f'{self.parent_class.camel_case_name}_of_{self.display_name}MetaMethod__internal__'
+
+    def __repr__(self) -> str:
+        return f"{'static ' if self.decl_cursor.is_static_method() else ''}{self.return_type.spelling}({', '.join([param.type.spelling for param in self.params])})"
+
+
 class ClassField(CommonBase):
     parent_class: 'Class'
 
@@ -145,7 +172,20 @@ class Class(CommonBase):
 
     @cached_property
     def public_fields(self) -> list[ClassField]:
-        return [field for field in self.fields if field.access_specifier == 'public']
+        return [field for field in self.fields if field.access_specifier == 'public' and field.metadata is not None]
+
+    @cached_property
+    def methods(self) -> list[Method]:
+        result = []
+        for cursor in self.decl_cursor.get_children():
+            cursor: clang.cindex.Cursor
+            if cursor.kind == clang.cindex.CursorKind.CXX_METHOD:
+                result.append(Method(cursor, self))
+        return result
+
+    @cached_property
+    def public_methods(self) -> list[Method]:
+        return [method for method in self.methods if method.access_specifier == 'public' and method.metadata is not None]
 
 
 class CxxHeaderFileProcessor:
@@ -169,7 +209,8 @@ class CxxHeaderFileProcessor:
         self._out_header = f'''#pragma once
 #pragma warning (disable: 4244)
 \n#include <array>\n#include <tuple>
-#include "class.h"\n#include "metaspace.h"\n#include "field.h"\n#include "polyfill.h"
+#include "class.h"\n#include "metaspace.h"\n#include "field.h"\n#include "method.h"
+#include "polyfill.h"
 #include "container/vector.hpp"\n#include "container/shared_ptr.hpp"\n#include "container/unique_ptr.hpp"\n
 '''
         self._out_source = f'#include <cassert>\n#include "{self._filepath}"\n\nusing namespace avalanche;'
@@ -375,10 +416,32 @@ public:
 
     return result
 
+def generate_methods_class(current_class: Class) -> str:
+    result = ""
+    for method in current_class.methods:
+        if method.metadata is None:
+            continue
+        if method.access_specifier != 'public':
+            raise ValueError(f'{method.source_location_text}: error: Method "{method.display_name}" access specifier expected "public", found "{method.access_specifier}".')
+        result += f"""
+class {method.metaclass_name} : public avalanche::Method {{
+public:
+    [[nodiscard]] Class* get_declaring_class() const override {{
+        return Class::for_name(class_name_v<{current_class.fully_qualified_name}>);
+    }}
+    
+    [[nodiscard]] const char* get_name() const override {{
+        return "{method.display_name}";
+    }}
+}};
+"""
+    return result
 
 def generate_metaclass(current_class: Class) -> str:
     template = f"""
 {generate_fields_class(current_class)}
+
+{generate_methods_class(current_class)}
 
 class {current_class.metaclass_name} : public avalanche::Class {{
 public:
@@ -409,13 +472,23 @@ public:
     }}
     
     void fields(int32_t& num_result, const avalanche::Field* const*& out_data) const override {{
-        constexpr int32_t num_fields = {len(current_class.fields)};
+        constexpr int32_t num_fields = {len(current_class.public_fields)};
         {'\n\t\t'.join([f'static {field.metaclass_name} {field.metaclass_name}_inst{{}};' for field in current_class.public_fields])}
         { f"""static constexpr const Field*{ f""" fields[] {{
             {',\n\t\t\t'.join([f'&{field.metaclass_name}_inst' for field in current_class.public_fields])}
-        }}""" if current_class.fields else "* fields = nullptr" };"""}
+        }}""" if current_class.public_fields else "* fields = nullptr" };"""}
         num_result = num_fields;
         out_data = fields;
+    }}
+    
+    void methods(int32_t& num_result, const Method* const*& out_data) const override {{
+        constexpr int32_t num_methods = {len(current_class.public_methods)};
+        {'\n\t\t'.join([f'static {method.metaclass_name} {method.metaclass_name}_inst{{}};' for method in current_class.public_methods])}
+        { f"""static constexpr const Method*{ f""" methods[] {{
+            {',\n\t\t\t'.join([f'&{method.metaclass_name}_inst' for method in current_class.public_methods])}
+        }}""" if current_class.public_methods else "* methods = nullptr" };"""}
+        num_result = num_methods;
+        out_data = methods;
     }}
 }};
 """

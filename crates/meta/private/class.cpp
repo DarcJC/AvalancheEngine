@@ -44,9 +44,9 @@ namespace avalanche {
         out_data = nullptr;
     }
 
-    const Field* Class::get_field(std::string_view name) const {
+    const Field *Class::get_field(std::string_view name) const {
         int32_t num_fields;
-        const Field *const* out_fields;
+        const Field *const *out_fields;
         fields(num_fields, out_fields);
         for (int32_t i = 0; i < num_fields; ++i) {
             if (name == out_fields[i]->get_name()) {
@@ -54,6 +54,11 @@ namespace avalanche {
             }
         }
         return nullptr;
+    }
+
+    void Class::methods(int32_t &num_result, const Method *const *&out_data) const {
+        num_result = 0;
+        out_data = nullptr;
     }
 
     bool Class::equals_to(const Class &other) const {

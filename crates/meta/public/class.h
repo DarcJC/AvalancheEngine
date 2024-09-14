@@ -1,15 +1,16 @@
 #pragma once
 
 
-#include "avalanche_meta_export.h"
-#include <string_view>
 #include <string>
+#include <string_view>
+#include "avalanche_meta_export.h"
 #include "metamixin.h"
 
 
 namespace avalanche {
 
     class Field;
+    class Method;
 
     struct metadata_tag : CanGetDeclaringClassMixin {};
 
@@ -63,6 +64,12 @@ namespace avalanche {
         /// @param name field name
         /// @return A pointer of field instance, nullptr if not exist
         [[nodiscard]] virtual const Field* get_field(std::string_view name) const;
+
+        /// @brief Get methods
+        /// @note Only reflected methods will be listed here.
+        /// @param num_result Field count
+        /// @param out_data
+        virtual void methods(int32_t& num_result, const Method* const*& out_data) const;
 
         /// @brief Comparing if two @code Class@endcode is same
         /// @return Currently, @code true@endcode if memory address is same or @code full_name()@endcode is same.
