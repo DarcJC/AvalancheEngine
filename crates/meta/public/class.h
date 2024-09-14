@@ -13,7 +13,10 @@ namespace avalanche {
 
     struct metadata_tag : CanGetDeclaringClassMixin {};
 
-    class AVALANCHE_META_API Object : public CanGetClassMixin {};
+    class AVALANCHE_META_API Object : public CanGetClassMixin, public HasQualifiersMixin {
+    public:
+        [[nodiscard]] TypeQualifiers qualifiers() const override;
+    };
 
     /// @brief Runtime information of a type
     class AVALANCHE_META_API Class : public HasMetadataMixin, public HasNameMixin {
@@ -96,6 +99,9 @@ namespace avalanche {
 
     template <typename T>
     constexpr const char* class_name_v = class_name<T>::value;
+
+    template <typename T>
+    static constexpr std::string_view class_name_sv = class_name_v<T>;
 
     template <typename T>
     constexpr bool class_name_p = class_name<T>::primitive;

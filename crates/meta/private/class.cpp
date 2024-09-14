@@ -6,6 +6,10 @@
 
 namespace avalanche {
 
+    TypeQualifiers Object::qualifiers() const {
+        return {};
+    }
+
     Class *Class::for_name(const std::string_view name) { return MetaSpace::get().find_class(name); }
 
     const char* Class::get_name() const {

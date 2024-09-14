@@ -1,11 +1,14 @@
 #pragma once
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
 #include <type_traits>
-#include <concepts>
+#include <expected>
+#include "avalanche_meta_export.h"
 #include "class.h"
 #include "metamixin.h"
-#include "avalanche_meta_export.h"
+
+#include <cassert>
 
 
 namespace avalanche {
@@ -20,23 +23,10 @@ namespace avalanche {
         struct is_pointer_reference<T*&> : std::true_type {};
     } // namespace detail
 
-    struct TypeQualifiers {
-        uint32_t reference: 1 = false;
-        uint32_t pointer: 1 = false;
-        uint32_t lvalue: 1 = false;
-        uint32_t rvalue : 1 = false;
-
-        bool operator==(const TypeQualifiers &) const = default;
-        bool operator!=(const TypeQualifiers &) const = default;
-    };
-
     /// @brief Providing type info for struct
     /// @note As we don't want a struct to inherit Object, so we should provide a wrapper that has the type info.
-    class AVALANCHE_META_API ScopedStruct : public ManageMemoryMixin, public CanGetClassMixin {
+    class AVALANCHE_META_API ScopedStruct : public ManageMemoryMixin, public CanGetClassMixin, public HasQualifiersMixin {
     public:
-        /// @brief Get type qualifiers of contained type
-        [[nodiscard]] virtual TypeQualifiers qualifiers() const = 0;
-
         /// @brief Check if target type can cast to this type safely.
         /// Reference is safe to cast to pointer with same type.
         /// @note There is no way to get info from a @code typename@endcode at runtime.
@@ -122,6 +112,7 @@ namespace avalanche {
 
         [[nodiscard]] TypeQualifiers qualifiers() const override {
             static TypeQualifiers qualifiers {
+                .default_initialized = false,
                 .pointer = std::is_pointer_v<std::decay_t<T>>, // Ignore reference here to get real type
                 .reference = std::is_reference_v<T>,
                 .lvalue = std::is_lvalue_reference_v<T>,
@@ -159,7 +150,7 @@ namespace avalanche {
     };
 
     /// @brief Merging struct and object to a single type
-    class AVALANCHE_META_API Chimera : public CanGetClassMixin, public ManageMemoryMixin {
+    class AVALANCHE_META_API Chimera : public CanGetClassMixin, public ManageMemoryMixin, public HasQualifiersMixin {
     public:
         Chimera();
         explicit Chimera(ScopedStruct* scoped_struct_, bool managed_ = false);
@@ -175,6 +166,8 @@ namespace avalanche {
         void* memory() override;
         [[nodiscard]] void const* memory() const override;
 
+        [[nodiscard]] TypeQualifiers qualifiers() const override;
+
         [[nodiscard]] bool is_valid() const;
         [[nodiscard]] bool is_managed() const;
 
@@ -182,6 +175,42 @@ namespace avalanche {
         /// @note Do nothing if @code is_managed() == false@endcode
         void release();
         void swap(Chimera& other) noexcept;
+
+        [[nodiscard]] bool is_signed_integer() const;
+        [[nodiscard]] bool is_unsigned_integer() const;
+        [[nodiscard]] int64_t as_integer() const;
+        [[nodiscard]] double as_float_point() const;
+
+        enum class cast_error {
+            null_class,
+            unexpected_type,
+            invalid_memory,
+        };
+
+        template <typename T>
+        requires has_class_name<std::remove_pointer_t<std::decay_t<T>>>
+        [[nodiscard]] auto as() -> std::expected<T, cast_error> {
+            const Class* clazz = get_class();
+
+            if (clazz == nullptr) {
+                return std::unexpected(cast_error::null_class);
+            }
+
+            if (nullptr == memory()) {
+                return std::unexpected(cast_error::invalid_memory);
+            }
+
+            constexpr std::string_view target_class_name = class_name_sv<std::remove_pointer_t<std::decay_t<T>>>;
+            const TypeQualifiers modifiers = qualifiers();
+            if (clazz->full_name() == target_class_name) {
+                if constexpr (std::is_pointer_v<T>) {
+                    return static_cast<T>(memory());
+                } else {
+                    return static_cast<T>(*static_cast<T*>(memory()));
+                }
+            }
+            return std::unexpected(cast_error::unexpected_type);
+        }
 
     private:
         union {

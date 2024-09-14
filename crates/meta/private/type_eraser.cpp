@@ -1,4 +1,8 @@
 #include "type_eraser.h"
+
+#include <cassert>
+
+#include <limits>
 #include "class.h"
 
 
@@ -96,6 +100,16 @@ namespace avalanche {
         return nullptr;
     }
 
+    TypeQualifiers Chimera::qualifiers() const {
+        if (m_flags.m_is_object && m_value.object) {
+            return m_value.object->qualifiers();
+        }
+        if (m_flags.m_is_struct && m_value.scoped_struct) {
+            return m_value.scoped_struct->qualifiers();
+        }
+        return {};
+    }
+
     bool Chimera::is_valid() const { return reinterpret_cast<const void *>(&m_value) != nullptr; }
 
     bool Chimera::is_managed() const {
@@ -117,9 +131,130 @@ namespace avalanche {
         m_flags.m_is_object = true;
     }
 
-    void Chimera::swap(Chimera& other) noexcept {
+    void Chimera::swap(Chimera &other) noexcept {
         std::swap(m_value, other.m_value);
         std::swap(m_flags, other.m_flags);
+    }
+
+    bool Chimera::is_signed_integer() const {
+        static std::string_view allowed_name[] {
+            class_name_sv<int8_t>,
+            class_name_sv<int16_t>,
+            class_name_sv<int32_t>,
+            class_name_sv<int64_t>,
+        };
+        if (const Class *clazz = get_class()) {
+            const std::string_view name = clazz->full_name();
+            for (const auto& i : allowed_name) {
+                if (i == name) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    bool Chimera::is_unsigned_integer() const {
+        static std::string_view allowed_name[] {
+            class_name_sv<uint8_t>,
+            class_name_sv<uint16_t>,
+            class_name_sv<uint32_t>,
+            class_name_sv<uint64_t>,
+        };
+        if (const Class *clazz = get_class()) {
+            const std::string_view name = clazz->full_name();
+            for (const auto& i : allowed_name) {
+                if (i == name) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    int64_t Chimera::as_integer() const {
+        const Class *clazz = get_class();
+        assert(clazz != nullptr);
+        if (clazz) {
+            const std::string_view name = clazz->full_name();
+            if (class_name_sv<uint8_t> == name) {
+                return *static_cast<const uint8_t *>(memory());
+            }
+            if (class_name_sv<uint16_t> == name) {
+                return *static_cast<const uint16_t *>(memory());
+            }
+            if (class_name_sv<uint32_t> == name) {
+                return *static_cast<const uint32_t *>(memory());
+            }
+            if (class_name_sv<uint64_t> == name) {
+                return *static_cast<const uint64_t *>(memory());
+            }
+            if (class_name_sv<int8_t> == name) {
+                return *static_cast<const int8_t *>(memory());
+            }
+            if (class_name_sv<int16_t> == name) {
+                return *static_cast<const int16_t *>(memory());
+            }
+            if (class_name_sv<int32_t> == name) {
+                return *static_cast<const int32_t *>(memory());
+            }
+            if (class_name_sv<int64_t> == name) {
+                return *static_cast<const int64_t *>(memory());
+            }
+            if (class_name_sv<float> == name) {
+                return static_cast<int64_t>(*static_cast<const float *>(memory()));
+            }
+            if (class_name_sv<double> == name) {
+                return static_cast<int64_t>(*static_cast<const double *>(memory()));
+            }
+            if (class_name_sv<long double> == name) {
+                return static_cast<int64_t>(*static_cast<const long double *>(memory()));
+            }
+        }
+
+        return std::numeric_limits<uint64_t>::min(); // Return 0 if storage isn't a numeric
+    }
+
+    double Chimera::as_float_point() const {
+        const Class *clazz = get_class();
+        assert(clazz != nullptr);
+        if (clazz) {
+            const std::string_view name = clazz->full_name();
+            if (class_name_sv<uint8_t> == name) {
+                return *static_cast<const uint8_t *>(memory());
+            }
+            if (class_name_sv<uint16_t> == name) {
+                return *static_cast<const uint16_t *>(memory());
+            }
+            if (class_name_sv<uint32_t> == name) {
+                return *static_cast<const uint32_t *>(memory());
+            }
+            if (class_name_sv<uint64_t> == name) {
+                return static_cast<double>(*static_cast<const uint64_t *>(memory()));
+            }
+            if (class_name_sv<int8_t> == name) {
+                return *static_cast<const int8_t *>(memory());
+            }
+            if (class_name_sv<int16_t> == name) {
+                return *static_cast<const int16_t *>(memory());
+            }
+            if (class_name_sv<int32_t> == name) {
+                return *static_cast<const int32_t *>(memory());
+            }
+            if (class_name_sv<int64_t> == name) {
+                return static_cast<double>(*static_cast<const int64_t *>(memory()));
+            }
+            if (class_name_sv<float> == name) {
+                return *static_cast<const float *>(memory());
+            }
+            if (class_name_sv<double> == name) {
+                return *static_cast<const double *>(memory());
+            }
+            if (class_name_sv<long double> == name) {
+                return static_cast<double>(*static_cast<const long double *>(memory()));
+            }
+        }
+        return std::numeric_limits<double>::quiet_NaN();
     }
 
 } // namespace avalanche
