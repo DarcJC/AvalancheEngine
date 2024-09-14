@@ -67,6 +67,24 @@ class CommonBase:
     def current_type_spelling(self) -> str:
         return self.decl_cursor.type.spelling
 
+    @cached_property
+    def access_specifier(self) -> Literal['invalid', 'public', 'protected', 'private', 'none']:
+        if self.decl_cursor.access_specifier == clang.cindex.AccessSpecifier.INVALID:
+            return 'invalid'
+        if self.decl_cursor.access_specifier == clang.cindex.AccessSpecifier.PUBLIC:
+            return 'public'
+        if self.decl_cursor.access_specifier == clang.cindex.AccessSpecifier.PROTECTED:
+            return 'protected'
+        if self.decl_cursor.access_specifier == clang.cindex.AccessSpecifier.PRIVATE:
+            return 'private'
+        if self.decl_cursor.access_specifier == clang.cindex.AccessSpecifier.NONE:
+            return 'none'
+
+    @cached_property
+    def source_location_text(self) -> str:
+        location: clang.cindex.SourceLocation = self.decl_cursor.location
+        return f"{location.file}({location.line}:{location.column})"
+
 
 class ClassField(CommonBase):
     parent_class: 'Class'
@@ -124,6 +142,10 @@ class Class(CommonBase):
             if cursor.kind == clang.cindex.CursorKind.FIELD_DECL:
                 result.append(ClassField(cursor, self))
         return result
+
+    @cached_property
+    def public_fields(self) -> list[ClassField]:
+        return [field for field in self.fields if field.access_specifier == 'public']
 
 
 class CxxHeaderFileProcessor:
@@ -216,7 +238,6 @@ class CxxHeaderFileProcessor:
         self.append_to_header(generate_class_metadata_struct(current_class))
         self.append_to_source(generate_metaclass(current_class))
         self._registered_classes.append(current_class)
-        _ = current_class.fields
 
     def generate_metaspace_storage(self):
         template = f'''
@@ -329,6 +350,8 @@ def generate_fields_class(current_class: Class) -> str:
     for field in current_class.fields:
         if field.metadata is None:
             continue
+        if field.access_specifier != 'public':
+            raise ValueError(f'{field.source_location_text}: error: Field "{field.display_name}" access specifier expected "public", found "{field.access_specifier}".')
         result += f"""
 class {field.metaclass_name} : public avalanche::Field {{
 public:
@@ -387,9 +410,9 @@ public:
     
     void fields(int32_t& num_result, const avalanche::Field* const*& out_data) const override {{
         constexpr int32_t num_fields = {len(current_class.fields)};
-        {'\n\t\t'.join([f'static {field.metaclass_name} {field.metaclass_name}_inst{{}};' for field in current_class.fields])}
+        {'\n\t\t'.join([f'static {field.metaclass_name} {field.metaclass_name}_inst{{}};' for field in current_class.public_fields])}
         { f"""static constexpr const Field*{ f""" fields[] {{
-            {',\n\t\t\t'.join([f'&{field.metaclass_name}_inst' for field in current_class.fields])}
+            {',\n\t\t\t'.join([f'&{field.metaclass_name}_inst' for field in current_class.public_fields])}
         }}""" if current_class.fields else "* fields = nullptr" };"""}
         num_result = num_fields;
         out_data = fields;

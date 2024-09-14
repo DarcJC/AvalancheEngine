@@ -32,9 +32,9 @@ namespace avalanche::rendering {
     /// @reflect
     struct TestData {
         /// @reflect
-        uint32_t field1;
-        /// @reflect
-        IRenderServer* field2;
+        uint32_t field1 = 0;
+    private:
+        IRenderServer* field2 = nullptr;
     };
 
 } // namespace avalanche::server
