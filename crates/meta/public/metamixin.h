@@ -17,6 +17,12 @@ namespace avalanche {
         [[nodiscard]] virtual class Class* get_declaring_class() const = 0;
     };
 
+    struct AVALANCHE_META_API HasNameMixin {
+        virtual ~HasNameMixin() = default;
+
+        [[nodiscard]] virtual const char* get_name() const = 0;
+    };
+
     struct AVALANCHE_META_API HasMetadataMixin {
         virtual ~HasMetadataMixin() = default;
     };

@@ -12,10 +12,7 @@ int main(int argc, char* argv[]) {
     rendering::TestData data{};
     data.field1 = 123456;
     const Class* clazz = Class::for_name(class_name_v<rendering::TestData>);
-    int32_t num;
-    const Field *const * fields;
-    clazz->fields(num, fields);
-    Chimera value = fields[0]->get_value<rendering::TestData&>(data);
+    Chimera value = clazz->get_field("field1")->get_value<rendering::TestData&>(data);
     AVALANCHE_LOGGER.info("{}", *static_cast<uint32_t*>(value.memory()));
 
     auto* window = engine->create_window(window::WindowSettings {});

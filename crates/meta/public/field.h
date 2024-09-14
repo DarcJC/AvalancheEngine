@@ -5,7 +5,7 @@
 namespace avalanche {
 
     /// @brief Data access interface for reflection usage
-    class Field : public HasMetadataMixin, public CanGetDeclaringClassMixin {
+    class Field : public HasMetadataMixin, public CanGetDeclaringClassMixin, public HasNameMixin {
     public:
         [[nodiscard]] virtual Chimera get(Chimera object) const = 0;
 

@@ -343,6 +343,10 @@ public:
     [[nodiscard]] Class* get_declaring_class() const override {{
         return Class::for_name(class_name_v<{current_class.fully_qualified_name}>);
     }}
+    
+    [[nodiscard]] const char* get_name() const override {{
+        return "{field.display_name}";
+    }}
 }};
 """
 

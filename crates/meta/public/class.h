@@ -16,7 +16,7 @@ namespace avalanche {
     class AVALANCHE_META_API Object : public CanGetClassMixin {};
 
     /// @brief Runtime information of a type
-    class AVALANCHE_META_API Class : public HasMetadataMixin {
+    class AVALANCHE_META_API Class : public HasMetadataMixin, public HasNameMixin {
     public:
         /// @brief Find class by name
         /// @param name full qualified class name
@@ -29,6 +29,8 @@ namespace avalanche {
         /// @brief Value is same as @code full_name()@endcode but returning as const string&
         /// @return e.g. @code "avalanche::Object"@endcode
         [[nodiscard]] virtual const std::string& full_name_str() const = 0;
+        /// @brief Forwarded to @code full_name_str().c_str()@endcode
+        [[nodiscard]] const char* get_name() const override;
 
         /// @brief Type hash of this class.
         /// @note The probability of a collision is rare, but not impossible.
@@ -54,6 +56,10 @@ namespace avalanche {
         /// @param num_result Field count
         /// @param out_data
         virtual void fields(int32_t& num_result, const Field* const*& out_data) const;
+        /// @brief Get field by name
+        /// @param name field name
+        /// @return A pointer of field instance, nullptr if not exist
+        [[nodiscard]] virtual const Field* get_field(std::string_view name) const;
 
         /// @brief Comparing if two @code Class@endcode is same
         /// @return Currently, @code true@endcode if memory address is same or @code full_name()@endcode is same.
