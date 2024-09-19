@@ -176,4 +176,15 @@ namespace avalanche::rendering {
         Max,
     };
 
+    /// @brief State of an command encoder
+    enum class CommandEncoderState : uint8_t {
+        /// @brief The encoder is available to encode new commands.
+        Open = 0,
+        /// @brief The encoder cannot be used, because it is locked by a child encoder
+        /// @note The encoder becomes "Open" again when the pass is ended.
+        Locked,
+        /// @brief The encoder has been ended and new commands can no longer be encoded.
+        Ended,
+    };
+
 }

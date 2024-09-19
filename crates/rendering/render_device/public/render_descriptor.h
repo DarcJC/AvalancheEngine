@@ -35,6 +35,7 @@ namespace avalanche::rendering {
     struct RenderPassDesc {
         vector<handle_t> color_attachments;
         handle_t depth_stencil_attachment;
+        size_t max_draw_call_count = 50000000ULL;
     };
 
     struct ComputePassDesc {
