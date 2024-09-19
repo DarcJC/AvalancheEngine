@@ -36,12 +36,19 @@ namespace avalanche {
         [[nodiscard]] virtual void const* memory() const = 0;
     };
 
+    struct AVALANCHE_META_API HasArgsInfo {
+        virtual ~HasArgsInfo() = default;
+
+        [[nodiscard]] virtual uint64_t arg_hash() const = 0;
+    };
+
     struct TypeQualifiers {
         uint32_t default_initialized: 1 = true;
         uint32_t reference: 1 = false;
         uint32_t pointer: 1 = false;
         uint32_t lvalue: 1 = false;
-        uint32_t rvalue : 1 = false;
+        uint32_t rvalue: 1 = false;
+        uint32_t object: 1 = false;
 
         bool operator==(const TypeQualifiers &) const = default;
         bool operator!=(const TypeQualifiers &) const = default;

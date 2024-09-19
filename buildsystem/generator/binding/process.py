@@ -106,6 +106,10 @@ class Method(CommonBase):
         return result
 
     @cached_property
+    def param_typenames(self) -> list[str]:
+        return [p.type.get_canonical().spelling for p in self.params]
+
+    @cached_property
     def metaclass_name(self) -> str:
         return f'{self.parent_class.camel_case_name}_of_{self.display_name}MetaMethod__internal__'
 
@@ -432,6 +436,10 @@ public:
     
     [[nodiscard]] const char* get_name() const override {{
         return "{method.display_name}";
+    }}
+    
+    [[nodiscard]] uint64_t arg_hash() const override {{
+        return arg_package_hash_v<{",".join([f"std::remove_cvref_t<{name}>" for name in method.param_typenames])}>;
     }}
 }};
 """

@@ -1,13 +1,14 @@
 #include "class.h"
-
-#include <field.h>
-
+#include "field.h"
+#include "method.h"
 #include "metaspace.h"
 
 namespace avalanche {
 
     TypeQualifiers Object::qualifiers() const {
-        return {};
+        return {
+            .object = true,
+        };
     }
 
     Class *Class::for_name(const std::string_view name) { return MetaSpace::get().find_class(name); }
@@ -44,7 +45,7 @@ namespace avalanche {
         out_data = nullptr;
     }
 
-    const Field *Class::get_field(std::string_view name) const {
+    const Field *Class::get_field(const std::string_view name) const {
         int32_t num_fields;
         const Field *const *out_fields;
         fields(num_fields, out_fields);
@@ -59,6 +60,18 @@ namespace avalanche {
     void Class::methods(int32_t &num_result, const Method *const *&out_data) const {
         num_result = 0;
         out_data = nullptr;
+    }
+
+    const Method* Class::get_method(const std::string_view name, const size_t arg_hash) const {
+        int32_t num_methods;
+        const Method *const *out_methods;
+        methods(num_methods, out_methods);
+        for (int32_t i = 0; i < num_methods; ++i) {
+            if (name == out_methods[i]->get_name() && (arg_hash == 0 || arg_hash == out_methods[i]->arg_hash())) {
+                return out_methods[i];
+            }
+        }
+        return nullptr;
     }
 
     bool Class::equals_to(const Class &other) const {

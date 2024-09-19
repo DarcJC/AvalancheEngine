@@ -4,6 +4,6 @@
 
 
 namespace avalanche {
-    class Method : public HasNameMixin, public CanGetDeclaringClassMixin {
+    class Method : public HasNameMixin, public CanGetDeclaringClassMixin, public HasArgsInfo {
     };
 } // namespace avalanche

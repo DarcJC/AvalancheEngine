@@ -19,6 +19,8 @@ namespace avalanche::rendering {
         handle_t final_fence = handle_t::null_handle();
     };
 
+    /// @brief Any object can be rendering to should implement this mixin
+    /// @reflect
     struct CanRenderOnMixin {
         virtual ~CanRenderOnMixin();
 
@@ -30,3 +32,5 @@ namespace avalanche::rendering {
     };
 
 } // namespace avalanche::rendering
+
+#include "render_frame.generated.h"

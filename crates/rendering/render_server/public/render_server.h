@@ -2,6 +2,7 @@
 #include "avalanche_render_server_export.h"
 #include "manager/server_manager.h"
 #include "manager/tick_manager.h"
+#include "render_frame.h"
 #include "resource.h"
 
 namespace avalanche::rendering {
@@ -21,6 +22,7 @@ namespace avalanche::rendering {
         AVALANCHE_NO_DISCARD static IRenderServer* create();
 
         /// @brief Pushing a frame job into rendering queue
+        /// @reflect
         virtual void queue_frame_to_render(uint64_t unique_invokee_id, CanRenderOnMixin& object_been_render_on) = 0;
     };
 

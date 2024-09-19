@@ -5,6 +5,7 @@
 #include <string_view>
 #include "avalanche_meta_export.h"
 #include "metamixin.h"
+#include "metaspace.h"
 
 
 namespace avalanche {
@@ -70,12 +71,20 @@ namespace avalanche {
         /// @param num_result Field count
         /// @param out_data
         virtual void methods(int32_t& num_result, const Method* const*& out_data) const;
+        /// @brief Get method by name
+        /// @param name method name. The name is as-is.
+        /// @param arg_hash hash of arguments.
+        /// @return A pointer of method instance, nullptr if not exist
+        [[nodiscard]] virtual const Method* get_method(std::string_view name, size_t arg_hash) const;
 
         /// @brief Comparing if two @code Class@endcode is same
         /// @return Currently, @code true@endcode if memory address is same or @code full_name()@endcode is same.
         /// @note Comparing hash might be fast, but I don't want to deal with the collisions.
         [[nodiscard]] virtual bool equals_to(const Class& other) const;
+
+        /// @brief Compare operator is using @code bool equals_to(const Class& other)@endcode
         bool operator==(const Class& other) const;
+        /// @brief Compare operator is using @code bool equals_to(const Class& other)@endcode
         bool operator!=(const Class &) const;
     };
 
@@ -112,6 +121,29 @@ namespace avalanche {
 
     template <typename T>
     constexpr bool class_name_p = class_name<T>::primitive;
+
+    template <typename... Ts>
+    struct arg_package_hash {
+    private:
+        static constexpr uint64_t hash_string(uint64_t hash, std::string_view str) noexcept {
+            for (const char c : str) {
+                hash ^= static_cast<unsigned char>(c);
+                hash *= detail::FNV1aInternal<uint64_t>::prime;
+            }
+            return hash;
+        }
+
+        static constexpr uint64_t  compute_hash() noexcept {
+            uint64_t hash = detail::FNV1aInternal<uint64_t>::val;
+            ((hash = hash_string(hash, class_name_sv<Ts>)), ...);
+            return hash;
+        }
+    public:
+        static constexpr uint64_t value = compute_hash();
+    };
+
+    template <typename... Ts>
+    constexpr uint64_t arg_package_hash_v = arg_package_hash<Ts...>::value;
 
     template <typename T>
     class ObjectCRTP : public Object {

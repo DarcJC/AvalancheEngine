@@ -11,24 +11,6 @@
 
 
 namespace avalanche {
-    uint32_t FNV1aHash::hash_32_fnv1a(const std::string_view str) noexcept {
-        uint32_t hash = detail::FNV1aInternal<uint32_t>::val;
-        for (const unsigned char c : str) {
-            hash = hash ^ c;
-            hash *= detail::FNV1aInternal<uint32_t>::prime;
-        }
-        return hash;
-    }
-
-    uint64_t FNV1aHash::hash_64_fnv1a(const std::string_view str) noexcept {
-        uint64_t hash = detail::FNV1aInternal<uint64_t>::val;
-        for (const unsigned char c : str) {
-            hash = hash ^ c;
-            hash *= detail::FNV1aInternal<uint64_t>::prime;
-        }
-        return hash;
-    }
-
     size_t FNV1aHash::operator()(std::string_view str) const noexcept {
         if constexpr (sizeof(size_t) == sizeof(uint32_t)) {
             return hash_32_fnv1a(str);
