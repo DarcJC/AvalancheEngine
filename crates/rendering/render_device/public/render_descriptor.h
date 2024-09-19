@@ -32,4 +32,12 @@ namespace avalanche::rendering {
         bool signaled = false;
     };
 
+    struct RenderPassDesc {
+        vector<handle_t> color_attachments;
+        handle_t depth_stencil_attachment;
+    };
+
+    struct ComputePassDesc {
+    };
+
 }
