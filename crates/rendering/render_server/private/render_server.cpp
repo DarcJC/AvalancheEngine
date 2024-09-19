@@ -9,6 +9,8 @@
 
 namespace avalanche::rendering {
 
+    RenderServerImpl::RenderServerImpl(const DeviceSettings &settings) : m_settings(settings) {}
+
     void RenderServerImpl::tick(duration_type delta_time) {}
 
     void RenderServerImpl::on_startup() {
@@ -31,18 +33,15 @@ namespace avalanche::rendering {
     }
 
     unique_ptr<IRenderDevice> RenderServerImpl::pick_and_initialize_render_device() const {
-        // TODO: pick device based on settings
 #if AVALANCHE_ENABLE_VULKAN
-        return unique_ptr<IRenderDevice>(vulkan::RenderDevice::create_instance({}));
+        return { vulkan::RenderDevice::create_instance(m_settings) };
 #endif
 
         AVALANCHE_CHECK_RUNTIME(false, "Can't not determine which GAPI to use");
     }
 
-    IRenderServer* IRenderServer::get() { return core::ServerManager::get().get_server_checked<IRenderServer>(); }
-
-    IRenderServer* IRenderServer::create() {
-        return new RenderServerImpl();
+    IRenderServer* IRenderServer::create(const DeviceSettings& settings) {
+        return new RenderServerImpl(settings);
     }
 
 } // namespace avalanche::server

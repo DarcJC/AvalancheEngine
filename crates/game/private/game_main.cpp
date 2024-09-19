@@ -7,7 +7,14 @@ using namespace avalanche;
 
 int main(int argc, char* argv[]) {
 
-    auto engine = IEngine::create_instance({});
+    auto engine = IEngine::create_instance({
+        .primary_render_device_settings = rendering::DeviceSettings {
+            .required_features = {
+                .display = true,
+                .debug = true,
+            },
+        },
+    });
 
     rendering::TestData data{};
     data.field1 = 123456;

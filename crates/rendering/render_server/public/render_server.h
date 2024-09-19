@@ -3,11 +3,11 @@
 #include "manager/server_manager.h"
 #include "manager/tick_manager.h"
 #include "render_frame.h"
-#include "resource.h"
+#include "render_resource.h"
+#include "render_device.h"
 
 namespace avalanche::rendering {
     struct CanRenderOnMixin;
-    using core::handle_t;
 
     /// @brief RenderServer provide a high level interface of the render hardware
     /// @avalanche::begin
@@ -18,8 +18,7 @@ namespace avalanche::rendering {
     /// @avalanche::end
     class AVALANCHE_RENDER_SERVER_API IRenderServer : public core::ServerCRTPTickable<IRenderServer, core::TickGroup::CollectRenderingResource> {
     public:
-        AVALANCHE_NO_DISCARD static IRenderServer* get();
-        AVALANCHE_NO_DISCARD static IRenderServer* create();
+        AVALANCHE_NO_DISCARD static IRenderServer* create(const DeviceSettings& settings);
 
         /// @brief Pushing a frame job into rendering queue
         /// @reflect

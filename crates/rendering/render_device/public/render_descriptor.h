@@ -3,11 +3,10 @@
 
 #include <cstdint>
 #include "render_enums.h"
-#include "resource.h"
+#include "render_resource.h"
 
 
 namespace avalanche::rendering {
-    using core::handle_t;
 
     struct descriptor_tag {};
 

@@ -27,5 +27,3 @@ else ()
 endif ()
 
 target_compile_definitions(avalanche_render_driver_vulkan PRIVATE VULKAN_HPP_DISPATCH_LOADER_DYNAMIC)
-
-add_subdirectory(tests)

@@ -1,6 +1,7 @@
 #pragma once
 #include <container/unique_ptr.hpp>
 #include <core.h>
+#include <render_device.h>
 
 
 namespace avalanche {
@@ -13,6 +14,7 @@ namespace avalanche {
     using namespace avalanche::core;
 
     struct EngineDesc {
+        rendering::DeviceSettings primary_render_device_settings;
     };
 
     class IEngine {

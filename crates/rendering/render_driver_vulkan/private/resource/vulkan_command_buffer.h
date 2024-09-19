@@ -3,7 +3,7 @@
 #include "vulkan/vulkan.hpp"
 
 #include <render_descriptor.h>
-#include <resource.h>
+#include <render_resource.h>
 
 namespace avalanche::rendering::EResourceType {
     constexpr resource_type_t VulkanCommandBuffer = 260;
@@ -26,7 +26,7 @@ namespace avalanche::rendering::vulkan {
 
     class CommandBuffer : public ResourceCRTPBase<EResourceType::VulkanCommandBuffer> {
     public:
-        explicit CommandBuffer(IRenderDevice& render_device, core::handle_t parent_pool, vk::CommandBuffer command_buffer = nullptr);
+        explicit CommandBuffer(IRenderDevice& render_device, handle_t parent_pool, vk::CommandBuffer command_buffer = nullptr);
         ~CommandBuffer() override;
 
         void initialize(const CommandBufferDesc& desc);
@@ -40,7 +40,7 @@ namespace avalanche::rendering::vulkan {
 
     private:
         vk::CommandBuffer m_command_buffer;
-        core::handle_t m_command_pool_handle;
+        handle_t m_command_pool_handle;
     };
 
 } // namespace avalanche::rendering::vulkan

@@ -6,10 +6,9 @@
 #include "container/vector.hpp"
 #include "window_server.h"
 #include "vulkan/vulkan.hpp"
+#include "render_resource.h"
 
 namespace avalanche::rendering::vulkan {
-
-    using core::handle_t;
 
     class RenderDevice;
     class VulkanWindow;

@@ -8,6 +8,8 @@ namespace avalanche::rendering {
 
     class RenderServerImpl : public IRenderServer {
     public:
+        explicit RenderServerImpl(const DeviceSettings& settings);
+
         //  Begin ITickable interface
         void tick(duration_type delta_time) override;
         void on_startup() override;
@@ -22,6 +24,7 @@ namespace avalanche::rendering {
         AVALANCHE_NO_DISCARD unique_ptr<IRenderDevice> pick_and_initialize_render_device() const;
 
     private:
+        DeviceSettings m_settings;
         unique_ptr<IRenderDevice> m_primary_render_device;
         core::INamedEvent::CancellerType m_queue_frame_event_canceller;
     };

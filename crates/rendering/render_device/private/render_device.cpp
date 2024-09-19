@@ -9,10 +9,8 @@
 #include <shared_mutex>
 
 #include "render_resource.h"
-#include "resource.h"
 
 namespace avalanche::rendering {
-    using core::handle_t;
 
     class RenderResourcePool : public IRenderResourcePool {
     public:
@@ -22,7 +20,7 @@ namespace avalanche::rendering {
             AVALANCHE_CHECK_RUNTIME(m_render_device != nullptr, "Invalid render device");
         }
 
-        IResource* get_resource(const core::handle_t &handle) override {
+        IResource* get_resource(const handle_t &handle) override {
             std::lock_guard lock(m_mutex);
             if (const auto it = m_resource.find(handle); it != m_resource.end()) {
                 return it->second;
@@ -75,23 +73,23 @@ namespace avalanche::rendering {
 
     IRenderDevice::IRenderDevice()
         : m_render_resource_pool(IRenderResourcePool::new_pool(this)) {
-        core::HandleCreateDelegate.add({&IRenderDevice::on_handle_created, *this});
-        core::HandleFreeDelegate.add({&IRenderDevice::on_handle_free, *this});
+        handle_t::get_create_observer().add({&IRenderDevice::on_handle_created, *this});
+        handle_t::get_free_observer().add({&IRenderDevice::on_handle_free, *this});
     }
 
     IRenderDevice::~IRenderDevice() {
-        core::HandleFreeDelegate.remove({&IRenderDevice::on_handle_free, *this});
-        core::HandleCreateDelegate.remove({&IRenderDevice::on_handle_created, *this});
+        handle_t::get_create_observer().remove({&IRenderDevice::on_handle_free, *this});
+        handle_t::get_free_observer().remove({&IRenderDevice::on_handle_created, *this});
         RenderResourcePool::delete_pool(m_render_resource_pool);
     }
 
-    void IRenderDevice::on_handle_created(const core::handle_t &handle) {
+    void IRenderDevice::on_handle_created(const handle_t &handle) {
         if (IResource* resource = get_resource_pool()->get_resource(handle)) {
             resource->flags().increase_rc();
         }
     }
 
-    void IRenderDevice::on_handle_free(const core::handle_t &handle) {
+    void IRenderDevice::on_handle_free(const handle_t &handle) {
         auto* pool = get_resource_pool();
         if (IResource* resource = pool->get_resource(handle)) {
             if (resource->flags().decrease_rc() == 0) {

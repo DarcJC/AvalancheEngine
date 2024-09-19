@@ -1,5 +1,6 @@
 #include <manager/module_manager.h>
 #include <manager/server_manager.h>
+#include <render_server.h>
 #include <window_server.h>
 
 #include "engine.h"
@@ -18,14 +19,18 @@ namespace avalanche {
     private:
         EngineDesc m_create_desc;
         unique_ptr<ServerManager> m_server_manager;
+        unique_ptr<rendering::IRenderServer> m_render_server;
     };
 
     unique_ptr<IEngine> IEngine::create_instance(const EngineDesc &desc) { return {make_unique<Engine>(desc)}; }
 
     Engine::Engine(const EngineDesc &desc)
         : m_create_desc(desc)
-        , m_server_manager(ServerManager::create_non_static_manager()) {
+        , m_server_manager(ServerManager::create_non_static_manager())
+        , m_render_server(rendering::IRenderServer::create(desc.primary_render_device_settings))
+    {
         ModuleManager::get().load_enabled_modules();
+        m_server_manager->register_server(m_render_server.get());
     }
 
     void Engine::poll() {}

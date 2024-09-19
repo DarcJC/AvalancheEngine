@@ -3,13 +3,9 @@
 #include "avalanche_render_device_export.h"
 #include "render_enums.h"
 #include "render_resource.h"
-#include "resource.h"
-
-#include <render_descriptor.h>
+#include "render_descriptor.h"
 
 namespace avalanche::rendering {
-
-    using core::handle_t;
 
     class IRenderGraph;
     class IResource;
@@ -38,8 +34,8 @@ namespace avalanche::rendering {
 
         virtual ~IRenderResourcePool();
 
-        virtual IResource* get_resource(const core::handle_t& handle) = 0;
-        virtual core::handle_t register_resource(IResource* resource) = 0;
+        virtual IResource* get_resource(const handle_t& handle) = 0;
+        virtual handle_t register_resource(IResource* resource) = 0;
     };
 
     class AVALANCHE_RENDER_DEVICE_API IRenderDevice {

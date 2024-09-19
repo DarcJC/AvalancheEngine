@@ -7,11 +7,16 @@
 #include "avalanche_render_device_export.h"
 #include "logger.h"
 #include "polyfill.h"
+#include "resource.h"
 
+
+DEFINE_RESOURCE_HANDLE(render, AVALANCHE_RENDER_DEVICE_API);
 
 namespace avalanche::rendering {
 
     class IRenderDevice;
+
+    using handle_t = core::ResourceHandle<resource_handle_tag_render>;
 
     using resource_type_t = uint16_t;
 

@@ -1,12 +1,10 @@
 #pragma once
 
 
-#include "resource.h"
+#include "render_resource.h"
 
 
 namespace avalanche::rendering {
-    using core::handle_t;
-
     /// @brief All required state to share in a frame
     struct FrameInFlight {
         // The render target to draw result on
