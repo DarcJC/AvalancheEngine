@@ -3,12 +3,8 @@
 #include "render_resource.h"
 #include "render_descriptor.h"
 #include "vulkan/vulkan.hpp"
+#include "vulkan_render_device.h"
 
-
-namespace avalanche::rendering::EResourceType {
-    constexpr resource_type_t VulkanImage = 256;
-    constexpr resource_type_t VulkanImageView = 257;
-} // namespace EResourceType
 
 namespace avalanche::rendering::vulkan {
 

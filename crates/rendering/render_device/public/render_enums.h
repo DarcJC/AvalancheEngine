@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <limits>
 
 namespace avalanche::rendering {
 
@@ -194,6 +195,40 @@ namespace avalanche::rendering {
         UInt32,
         /// @brief For acceleration structure. No indices aare provided.
         None,
+    };
+
+    using shader_stage_t = uint16_t;
+    namespace ShaderStageFlags {
+        constexpr shader_stage_t Vertex = 0x1;
+        constexpr shader_stage_t Pixel = 0x2;
+        constexpr shader_stage_t Compute = 0x4;
+        constexpr shader_stage_t Mesh = 0x8;
+        constexpr shader_stage_t Amplification = 0x10;
+        constexpr shader_stage_t RayGen = 0x20;
+        constexpr shader_stage_t AnyHit = 0x40;
+        constexpr shader_stage_t Intersection = 0x80;
+        constexpr shader_stage_t ClosestHit = 0x100;
+        constexpr shader_stage_t Miss = 0x200;
+        constexpr shader_stage_t Hull = 0x400;
+        constexpr shader_stage_t Tessellation = 0x800;
+        constexpr shader_stage_t Domain = 0x1000;
+        constexpr shader_stage_t Geometry = 0x2000;
+
+        constexpr shader_stage_t All = std::numeric_limits<shader_stage_t>::max();
+    }
+
+    enum class BindingResourceType : uint8_t {
+        None = 0,
+        SampledImage,
+        StorageImage,
+        UniformTexelBuffer,
+        StorageTexelBuffer,
+        UniformBuffer,
+        StorageBuffer,
+        Sampler,
+        AccelerateStructure,
+        PushConstants,
+        MaxNum,
     };
 
 }

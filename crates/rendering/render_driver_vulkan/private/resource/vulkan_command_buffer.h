@@ -4,11 +4,7 @@
 
 #include <render_descriptor.h>
 #include <render_resource.h>
-
-namespace avalanche::rendering::EResourceType {
-    constexpr resource_type_t VulkanCommandBuffer = 260;
-    constexpr resource_type_t VulkanCommandPool = 261;
-} // namespace EResourceType
+#include "vulkan_render_device.h"
 
 
 namespace avalanche::rendering::vulkan {

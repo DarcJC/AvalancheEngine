@@ -15,3 +15,20 @@ namespace avalanche::rendering::vulkan {
     };
 
 }
+
+
+namespace avalanche::rendering::EResourceType {
+    constexpr resource_type_t VulkanImage = 256;
+    constexpr resource_type_t VulkanImageView = 257;
+    constexpr resource_type_t VulkanSemaphore = 258;
+    constexpr resource_type_t VulkanFence = 259;
+    constexpr resource_type_t VulkanCommandBuffer = 260;
+    constexpr resource_type_t VulkanCommandPool = 261;
+    constexpr resource_type_t VulkanSurface = 262;
+    constexpr resource_type_t VulkanSwapchain = 263;
+    constexpr resource_type_t VulkanRenderPipeline = 300;
+    constexpr resource_type_t VulkanPipelineLayout = 301;
+    constexpr resource_type_t VulkanBindGroupLayout = 302;
+    constexpr resource_type_t VulkanBindGroup = 303;
+} // namespace EResourceType
+
