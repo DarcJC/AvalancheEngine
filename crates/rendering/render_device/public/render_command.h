@@ -1,18 +1,25 @@
 #pragma once
 
-#include "render_resource.h"
-#include "render_enums.h"
 #include <atomic>
+#include <cstddef>
+#include "avalanche_render_device_export.h"
+#include "container/color.hpp"
+#include "render_enums.h"
+#include "render_resource.h"
 
 
 namespace avalanche::rendering {
     struct RenderPassDesc;
     struct ComputePassDesc;
+    struct RenderBundleDesc;
 
     /// @brief A mixin that keeping encoder state.
     /// @note The operations provided here is thread safe.
-    class CommandsMixin {
+    class AVALANCHE_RENDER_DEVICE_API CommandEncoderMixin {
     public:
+        CommandEncoderMixin();
+        virtual ~CommandEncoderMixin();
+
         /// @brief Get current state of the encoder
         AVALANCHE_NO_DISCARD CommandEncoderState get_encoder_state() const;
 
@@ -24,10 +31,13 @@ namespace avalanche::rendering {
         void set_encoder_state(CommandEncoderState new_state);
 
     private:
-        std::atomic<uint8_t> m_current_state_ = static_cast<uint8_t>(CommandEncoderState::Open);
+        AVALANCHE_NO_DISCARD const std::atomic<uint8_t>* get_atomic_value() const;
+        std::atomic<uint8_t>* get_atomic_value();
+
+        alignas(std::atomic<uint8_t>) std::byte m_storage_[sizeof(std::atomic<uint8_t>)]{};
     };
 
-    class BindingCommandsMixin {
+    class AVALANCHE_RENDER_DEVICE_API BindingCommandsMixin {
     public:
         virtual ~BindingCommandsMixin() = default;
 
@@ -40,7 +50,7 @@ namespace avalanche::rendering {
     };
 
     /// @brief Providing an operation set of rendering
-    class RenderCommandsMixin {
+    class AVALANCHE_RENDER_DEVICE_API RenderCommandsMixin {
     public:
         virtual ~RenderCommandsMixin() = default;
 
@@ -48,8 +58,19 @@ namespace avalanche::rendering {
         /// @param render_pipeline The handle of pipeline state object of GAPI currently using.
         virtual void set_pipeline(handle_t render_pipeline) = 0;
 
-        /// TODO
-        virtual void set_index_buffer(handle_t buffer) = 0;
+        /// @brief  Sets the current index buffer.
+        /// @param buffer Buffer containing index data to use for subsequent drawing commands.
+        /// @param index_format Format of the index data contained in buffer.
+        /// @param offset Offset in bytes into buffer where the index data begins. Defaults to 0.
+        /// @param size Size in bytes of the index data in buffer. Defaults to the size of the buffer minus the offset.
+        virtual void set_index_buffer(handle_t buffer, IndexFormat index_format, size_t offset, size_t size) = 0;
+
+        /// @brief Sets the current vertex buffer for the given slot.
+        /// @param slot The vertex buffer slot to set the vertex buffer for.
+        /// @param buffer Buffer containing vertex data to use for subsequent drawing commands.
+        /// @param offset Offset in bytes into buffer where the vertex data begins. Defaults to 0.
+        /// @param size Size in bytes of the vertex data in buffer. Defaults to the size of the buffer minus the offset.
+        virtual void set_vertex_buffer(uint32_t slot, handle_t buffer, size_t offset, size_t size) = 0;
 
         /// @brief Perform a draw with vertex buffer and current pipeline state
         /// @param vertex_count Vertex count to draw
@@ -79,22 +100,69 @@ namespace avalanche::rendering {
         virtual void draw_indexed_indirect(handle_t indirect_buffer, size_t indirect_offset) = 0;
     };
 
-    class IRenderPassEncoder {
+    class AVALANCHE_RENDER_DEVICE_API IRenderBundle {
     public:
-        virtual ~IRenderPassEncoder() = default;
+        virtual ~IRenderBundle() = default;
     };
 
-    class IComputePassEncoder {
+    class AVALANCHE_RENDER_DEVICE_API IRenderBundleEncoder : public CommandEncoderMixin, public BindingCommandsMixin, public RenderCommandsMixin {
     public:
-        virtual ~IComputePassEncoder() = default;
+        virtual unique_ptr<IRenderBundle> finish(const RenderBundleDesc& desc) = 0;
     };
 
-    class IRayTracingPassEncoder {
+    class AVALANCHE_RENDER_DEVICE_API IRenderPassEncoder : public CommandEncoderMixin, public RenderCommandsMixin, public BindingCommandsMixin {
     public:
-        virtual ~IRayTracingPassEncoder() = default;
+        /// @brief Sets the viewport used during the rasterization stage to linearly map from normalized device coordinates to viewport coordinates.
+        /// @param x Minimum X value of the viewport in pixels.
+        /// @param y Minimum Y value of the viewport in pixels.
+        /// @param width Width of the viewport in pixels.
+        /// @param height Height of the viewport in pixels.
+        /// @param min_depth Minimum depth value of the viewport.
+        /// @param max_depth Maximum depth value of the viewport.
+        virtual void set_viewport(float x, float y, float width, float height, float min_depth, float max_depth) = 0;
+
+        /// @brief Sets the scissor rectangle used during the rasterization stage. After transformation into viewport coordinates any fragments which fall outside the scissor rectangle will be discarded.
+        /// @param x Minimum X value of the scissor rectangle in pixels.
+        /// @param y Minimum Y value of the scissor rectangle in pixels.
+        /// @param width Width of the scissor rectangle in pixels.
+        /// @param height Height of the scissor rectangle in pixels.
+        virtual void set_scissor_rect(size_t x, size_t y, size_t width, size_t height) = 0;
+
+        /// @brief Sets the constant blend color and alpha values used with "constant" and "one-minus-constant" GPUBlendFactors.
+        /// @param color New blend constant
+        virtual void set_blend_constant(const Color& color) = 0;
+
+        /// @brief Set stencil reference value dynamically.
+        /// @param reference_value New stencil reference value
+        virtual void set_stencil_reference(size_t reference_value) = 0;
+
+        /// @brief Appending commands in bundles to current encoder.
+        /// @param bundles A sequence of render command bundles.
+        virtual void execute_bundles(const vector<IRenderBundle>& bundles) = 0;
+
+        /// @brief Completes recording of the render pass commands sequence.
+        virtual void end() = 0;
     };
 
-    class ICommandEncoder {
+    class AVALANCHE_RENDER_DEVICE_API IComputePassEncoder : public CommandEncoderMixin, public BindingCommandsMixin {
+    public:
+        /// @brief Set current compute pipeline state.
+        virtual void set_pipeline(handle_t compute_pipeline) = 0;
+
+        /// @brief Completes recording of the compute pass commands sequence.
+        virtual void end() = 0;
+    };
+
+    class AVALANCHE_RENDER_DEVICE_API IRayTracingPassEncoder : public CommandEncoderMixin, public BindingCommandsMixin{
+    public:
+        /// @brief Set current ray tracing pipeline state.
+        virtual void set_pipeline(handle_t ray_tracing_pipeline) = 0;
+
+        /// @brief Completes recording of the ray tracing pass commands sequence.
+        virtual void end() = 0;
+    };
+
+    class AVALANCHE_RENDER_DEVICE_API ICommandEncoder : public CommandEncoderMixin {
     public:
         virtual ~ICommandEncoder() = default;
 

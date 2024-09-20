@@ -176,7 +176,7 @@ namespace avalanche::rendering {
         Max,
     };
 
-    /// @brief State of an command encoder
+    /// @brief State of a command encoder
     enum class CommandEncoderState : uint8_t {
         /// @brief The encoder is available to encode new commands.
         Open = 0,
@@ -185,6 +185,15 @@ namespace avalanche::rendering {
         Locked,
         /// @brief The encoder has been ended and new commands can no longer be encoded.
         Ended,
+    };
+
+    enum class IndexFormat : uint8_t {
+        /// @brief Indices are 16-bit unsigned integer values.
+        UInt16 = 0,
+        /// @brief Indices are 32-bit unsigned integer values.
+        UInt32,
+        /// @brief For acceleration structure. No indices aare provided.
+        None,
     };
 
 }

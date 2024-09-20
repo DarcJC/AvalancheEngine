@@ -41,4 +41,7 @@ namespace avalanche::rendering {
     struct ComputePassDesc {
     };
 
+    struct RenderBundleDesc {
+    };
+
 }

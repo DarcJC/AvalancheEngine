@@ -3,15 +3,31 @@
 
 namespace avalanche::rendering {
 
-    CommandEncoderState CommandsMixin::get_encoder_state() const {
-        return static_cast<CommandEncoderState>(m_current_state_.load(std::memory_order_acquire));
+    CommandEncoderMixin::CommandEncoderMixin() {
+        new (&m_storage_) std::atomic<uint8_t>{static_cast<uint8_t>(CommandEncoderState::Open)};
     }
 
-    void CommandsMixin::set_encoder_state(const CommandEncoderState new_state) {
-        m_current_state_.store(static_cast<uint8_t>(new_state), std::memory_order_release);
+    CommandEncoderMixin::~CommandEncoderMixin() {
+        get_atomic_value()->~atomic();
     }
 
-    bool CommandsMixin::can_write() const {
+    CommandEncoderState CommandEncoderMixin::get_encoder_state() const {
+        return static_cast<CommandEncoderState>(get_atomic_value()->load(std::memory_order_acquire));
+    }
+
+    void CommandEncoderMixin::set_encoder_state(const CommandEncoderState new_state) {
+        get_atomic_value()->store(static_cast<uint8_t>(new_state), std::memory_order_release);
+    }
+
+    const std::atomic<uint8_t> *CommandEncoderMixin::get_atomic_value() const {
+        return reinterpret_cast<const std::atomic<uint8_t> *>(&m_storage_);
+    }
+
+    std::atomic<uint8_t> *CommandEncoderMixin::get_atomic_value() {
+        return reinterpret_cast<std::atomic<uint8_t> *>(&m_storage_);
+    }
+
+    bool CommandEncoderMixin::can_write() const {
         const CommandEncoderState current_state = get_encoder_state();
         return current_state == CommandEncoderState::Open;
     }
