@@ -60,10 +60,9 @@ namespace avalanche::window {
         WindowSettings m_settings;
     };
 
-    /**
-     * @brief The Window Manager
-     * Using glfw3 as the window context provider.
-     */
+    /// @brief The Window Manager
+    /// @reflect
+    /// Using glfw3 as the window context provider.
     class AVALANCHE_WINDOW_SERVER_API IWindowServer : public core::ServerCRTPTickable<IWindowServer, core::TickGroup::PreRendering> {
     public:
         AVALANCHE_NO_DISCARD static IWindowServer* get();

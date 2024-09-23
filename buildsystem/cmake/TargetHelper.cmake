@@ -1,10 +1,15 @@
 
 set_property(GLOBAL PROPERTY AVALANCHE_ENABLED_MODULES "")
+add_custom_target(avalanche_internal_all_modules
+        ALL
+        COMMENT "Building all enabled module even they are not linked to ..."
+)
 
 function(add_enabled_modules NAME)
     get_property(prev GLOBAL PROPERTY AVALANCHE_ENABLED_MODULES)
     list(APPEND prev "${NAME}")
     set_property(GLOBAL PROPERTY AVALANCHE_ENABLED_MODULES "${prev}")
+    add_dependencies(avalanche_internal_all_modules "${NAME}")
 endfunction()
 
 function(avalanche_target)
@@ -24,6 +29,7 @@ function(avalanche_target)
         add_executable("${target_name}" "${PARSED_ARGS_SRCS}")
         add_executable("avalanche::${PARSED_ARGS_NAME}" ALIAS "${target_name}")
         target_compile_definitions("${target_name}" PRIVATE AVALANCHE_BUILD_EXECUTABLE=1)
+        add_dependencies("${target_name}" avalanche_internal_all_modules)
     elseif (PARSED_ARGS_SHARED_LIBRARY)
         add_library("${target_name}" SHARED "${PARSED_ARGS_SRCS}")
         add_library("avalanche::${PARSED_ARGS_NAME}" ALIAS "${target_name}")

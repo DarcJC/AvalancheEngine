@@ -211,6 +211,7 @@ class CxxHeaderFileProcessor:
         self._filepath = filepath
         self._include_paths = include_paths
         self._out_header = f'''#pragma once
+#if !defined(DURING_BUILD_TOOL_PROCESS)
 #pragma warning (disable: 4244)
 \n#include <array>\n#include <tuple>
 #include "class.h"\n#include "metaspace.h"\n#include "field.h"\n#include "method.h"
@@ -240,7 +241,7 @@ class CxxHeaderFileProcessor:
         self.append_to_source(self.generate_metaspace_storage())
 
     def save_outputs(self, out_header_path: str, out_source_path: str):
-        self._out_header = f'{self._out_header}\n#pragma warning (default: 4244)'
+        self._out_header = f'{self._out_header}\n#pragma warning (default: 4244)\n#endif // !defined(DURING_BUILD_TOOL_PROCESS)\n'
         self._out_source = f'#include "{out_header_path}"\n{self._out_source}\n'
         with open(out_header_path, "w") as f:
             f.truncate()
