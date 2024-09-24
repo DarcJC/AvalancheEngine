@@ -5,10 +5,9 @@
 #include <string_view>
 #include <mutex>
 
-#include "include/slang-com-ptr.h"
-#include "include/slang.h"
+#include "slang-com-ptr.h"
+#include "slang.h"
 #include "shader_server.h"
-#include "source/slang/slang-profile.h"
 
 
 namespace avalanche {
@@ -19,17 +18,18 @@ namespace avalanche {
     /// @note Following slang design, this class isn't thread-safe. Use @code static thread_local@endcode to create instance per thread.
     class ShaderCompilerBase {
     public:
+        ShaderCompilerBase();
         virtual ~ShaderCompilerBase() = default;
 
-        explicit ShaderCompilerBase(Slang::ComPtr<slang::ISession> session);
+        virtual Slang::ComPtr<slang::ISession> create_compiler_session(const ShaderCompileDesc& desc);
 
         /// @brief Compile shader code
-        unique_ptr<ShaderCompileData> compile(const ShaderCompileDesc& desc);
+        virtual unique_ptr<ShaderCompileData> compile(const ShaderCompileDesc& desc);
 
     protected:
-        static Slang::Profile retrieve_compile_profile(const ShaderCompileDesc& desc);
+        virtual SlangProfileID retrieve_compile_profile(const ShaderCompileDesc& desc);
 
-        Slang::ComPtr<slang::ISession> m_slang_session_;
+        Slang::ComPtr<slang::IGlobalSession> m_slang_global_session_;
         std::recursive_mutex m_mutex_{};
     };
 

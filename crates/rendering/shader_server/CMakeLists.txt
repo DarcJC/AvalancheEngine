@@ -18,4 +18,6 @@ target_link_libraries(avalanche_shader_server
 target_link_libraries(avalanche_shader_server
         PRIVATE
         slang
+        core
+        compiler-core
 )

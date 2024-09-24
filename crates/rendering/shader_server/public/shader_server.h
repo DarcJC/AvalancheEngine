@@ -3,13 +3,26 @@
 #include "avalanche_shader_server_export.h"
 
 #include <container/string.hpp>
+#include <container/vector.hpp>
 #include <render_enums.h>
 
 
 namespace avalanche {
 
-    struct ShaderCompileDesc {
+    struct ShaderModuleDesc {
+        string name = "<built-in>";
+        string path = "<built-in>";
         string code;
+    };
+
+    struct ShaderMacroDesc {
+        string name;
+        string value = "1";
+    };
+
+    struct ShaderCompileDesc {
+        vector<ShaderModuleDesc> modules;
+        vector<ShaderMacroDesc> macro_defines;
         rendering::EGraphicsAPIType target_api;
     };
 

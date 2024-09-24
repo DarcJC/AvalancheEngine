@@ -1,7 +1,7 @@
 #include "shader_server.h"
 
-#include <include/slang.h>
-#include <include/slang-com-ptr.h>
+#include <slang.h>
+#include <slang-com-ptr.h>
 
 
 namespace avalanche {
