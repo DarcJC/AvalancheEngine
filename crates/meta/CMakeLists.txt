@@ -1,7 +1,7 @@
 set(META_SOURCES
         "private/class.cpp" "private/metaspace.cpp"
         "private/field.cpp" "private/type_eraser.cpp"
-        "private/method.cpp"
+        "private/method.cpp" "private/dynamic_container.cpp"
 )
 
 avalanche_target(

@@ -14,3 +14,5 @@ if (AVALANCHE_ENABLE_VULKAN)
         add_subdirectory(Vulkan-Headers)
     endif ()
 endif ()
+
+# add_subdirectory(rocksdb)

@@ -60,6 +60,10 @@ class CommonBase:
         return f'{self.camel_case_name}MetaClass__internal__'
 
     @cached_property
+    def metastorage_name(self) -> str:
+        return f"{self.metaclass_name}__MetaStorage"
+
+    @cached_property
     def type_hash(self) -> int:
         return FNV1a().hash_64_fnv1a(self.fully_qualified_name)
 
@@ -214,7 +218,7 @@ class CxxHeaderFileProcessor:
 #if !defined(DURING_BUILD_TOOL_PROCESS)
 #pragma warning (disable: 4244)
 \n#include <array>\n#include <tuple>
-#include "class.h"\n#include "metaspace.h"\n#include "field.h"\n#include "method.h"
+#include "class.h"\n#include "metaspace.h"\n#include "field.h"\n#include "method.h"\n#include "dynamic_container.h"
 #include "polyfill.h"
 #include "container/vector.hpp"\n#include "container/shared_ptr.hpp"\n#include "container/unique_ptr.hpp"\n
 '''
@@ -281,7 +285,7 @@ class CxxHeaderFileProcessor:
             return
 
         self.append_to_header(generate_constant_class_name(current_class))
-        self.append_to_header(generate_class_metadata_struct(current_class))
+        self.append_to_source(generate_class_metadata_struct(current_class))
         self.append_to_source(generate_metaclass(current_class))
         self._registered_classes.append(current_class)
 
@@ -311,36 +315,65 @@ def extract_namespace(spelling: str) -> (str, str):
     return "", spelling
 
 
-def generate_metadata_fields(metadata: Optional[dict]) -> str:
-    metadata = metadata or {}
+def flatten_dict(d, parent_key='', sep='.'):
+    items = []
+    for k, v in d.items():
+        new_key = f"{parent_key}{sep}{k}" if parent_key else k
+        if isinstance(v, dict):
+            items.extend(flatten_dict(v, new_key, sep=sep).items())
+        else:
+            items.append((new_key, v))
+    return dict(items)
+
+
+def generate_metadata_container(value: any) -> str:
     result = ""
-    for (k, v) in metadata.items():
-        value_type = type(v)
-        if value_type is int or value_type is float:
-            result += f"{BASE_TYPE_MAPS[value_type]} {k} = {v};\n"
-        elif value_type is bool:
-            result += f"{BASE_TYPE_MAPS[value_type]} {k} = {'true' if v else 'false'};\n"
-        elif isinstance(v, dict):
-            result += (f'struct {{\n'
-                       f'   {generate_metadata_fields(v)}'
-                       f'}} {k} {{}};\n')
-        elif isinstance(v, list):
-            result += f'std::tuple<{",".join(map(lambda x: BASE_TYPE_MAPS[type(x)], v))}> {k} = std::make_tuple({",".join(map(lambda x: str(int(x)) if type(x) == bool else str(x), v))});\n'
-        elif isinstance(v, str):
-            result += f'const char* {k} = "{v}";\n'
+    value_type = type(value)
+    if value_type is int or value_type is float:
+        result += f"static const {BASE_TYPE_MAPS[value_type]} s_ = {value};"
+    elif value_type is bool:
+        result += f"static const {BASE_TYPE_MAPS[value_type]} s_ = {'true' if value else 'false'};"
+    elif isinstance(value, list):
+        result += f"static const char* s_ = {';'.join(map(lambda x: str(x), value))};"
+    elif isinstance(value, str):
+        result += f'static const char* s_ = "{value}";'
 
     return result
 
 
 def generate_class_metadata_struct(current_class: Class) -> str:
+    metadata = current_class.metadata or {}
     template = f"""
 namespace avalanche::generated {{
-    struct {current_class.display_name}MetadataType : metadata_tag {{
-        {generate_metadata_fields(current_class.metadata)}
+    struct {current_class.metastorage_name} : public IMetadataKeyValueStorage {{
         
         [[nodiscard]] Class* get_declaring_class() const override {{
             return Class::for_name(class_name_v<{current_class.fully_qualified_name}>);
         }}
+        
+        void keys(size_t& o_num_keys, std::string_view const* & o_keys) const override {{
+            {
+            f'''
+            static constexpr std::string_view svs[] = {{ 
+                {',\n\t\t\t\t'.join([f'std::string_view("{key}")' for key in metadata.keys()])}
+            }};\n'''
+            if len(metadata) != 0 else "static constexpr std::string_view* svs = nullptr;\n"
+            }
+            o_num_keys = { len(metadata) };
+            o_keys = svs;
+        }}
+        
+        [[nodiscard]] const DynamicContainerBase* get(std::string_view key) const override {{
+            { 
+            ' '.join([f'''if (key == "{key}") {{ 
+                {generate_metadata_container(metadata[key])}
+                static GenericDynamicContainer<decltype(s_)> result(s_);
+                return &result;
+            }}''' for key in metadata.keys()])
+            }
+            return nullptr;
+        }}
+        
     }};
 }} // namespace avalanche::generated
     """
@@ -370,7 +403,7 @@ def parse_comment(raw_comment: str) -> Optional[dict]:
             return None
         return {}
     toml_text = matches.group(1).replace("///", "").strip()
-    return tomli.loads(toml_text)
+    return flatten_dict(tomli.loads(toml_text))
 
 
 def get_base_classes_of_type(cursor: clang.cindex.Cursor) -> list[clang.cindex.Cursor]:

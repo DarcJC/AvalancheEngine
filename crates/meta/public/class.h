@@ -13,8 +13,6 @@ namespace avalanche {
     class Field;
     class Method;
 
-    struct metadata_tag : CanGetDeclaringClassMixin {};
-
     class AVALANCHE_META_API Object : public CanGetClassMixin, public HasQualifiersMixin {
     public:
         [[nodiscard]] TypeQualifiers qualifiers() const override;
@@ -198,5 +196,14 @@ namespace avalanche {
         const char* m_name = nullptr;
         std::string m_name_str;
     };
+
+    template <typename T, typename = void>
+    struct is_reflect_type : std::false_type {};
+
+    template <typename T>
+    struct is_reflect_type<T, std::enable_if_t<class_name_v<T>>> : std::true_type {};
+
+    template <typename T>
+    constexpr bool is_reflect_type_v = is_reflect_type<T>::value;
 
 } // namespace avalanche
