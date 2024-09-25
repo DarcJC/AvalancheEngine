@@ -26,6 +26,9 @@ namespace avalanche {
         rendering::EGraphicsAPIType target_api;
     };
 
+    struct ShaderCompileData {
+        vector<std::byte> target_code;
+    };
 
     /// @reflect
     /// @brief A singleton class for managing shader complication.

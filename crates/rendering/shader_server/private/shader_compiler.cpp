@@ -28,13 +28,15 @@ namespace avalanche {
         return session;
     }
 
-    unique_ptr<ShaderCompileData> ShaderCompilerBase::compile(const ShaderCompileDesc &desc) {
+    std::expected<unique_ptr<ShaderCompileData>, ShaderCompileError> ShaderCompilerBase::compile(const ShaderCompileDesc &desc) {
         std::lock_guard lock(m_mutex_);
 
         Slang::ComPtr<slang::ISession> compile_session = create_compiler_session(desc);
         Slang::ComPtr<slang::ICompileRequest> compile_request;
 
-        AVALANCHE_CHECK_RUNTIME(compile_session->createCompileRequest(compile_request.writeRef()) == SLANG_OK, "Failed to create compile request");
+        if (compile_session->createCompileRequest(compile_request.writeRef()) != SLANG_OK) {
+            return std::unexpected(ShaderCompileError::CreateCompileRequestFailed);
+        }
 
         AVALANCHE_CHECK_RUNTIME(!desc.modules.is_empty(), "Modules is an empty list");
 
@@ -43,9 +45,11 @@ namespace avalanche {
             compile_request->addTranslationUnitSourceString(translation_unit_index, module.path.data(), module.code.data());
         }
 
-        compile_request->compile();
-
+        const SlangResult compile_result = compile_request->compile();
         AVALANCHE_LOGGER.debug("Shader compilation result: \n\t{}", compile_request->getDiagnosticOutput());
+        if (compile_result != SLANG_OK) {
+            return std::unexpected(ShaderCompileError::InvalidCode);
+        }
 
         return nullptr;
     }

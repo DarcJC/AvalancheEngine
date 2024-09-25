@@ -5,14 +5,18 @@
 #include <string_view>
 #include <mutex>
 
+#include "shader_server.h"
 #include "slang-com-ptr.h"
 #include "slang.h"
-#include "shader_server.h"
+
+#include <expected>
 
 
 namespace avalanche {
 
-    struct ShaderCompileData {
+    enum class ShaderCompileError {
+        CreateCompileRequestFailed,
+        InvalidCode,
     };
 
     /// @note Following slang design, this class isn't thread-safe. Use @code static thread_local@endcode to create instance per thread.
@@ -24,7 +28,7 @@ namespace avalanche {
         virtual Slang::ComPtr<slang::ISession> create_compiler_session(const ShaderCompileDesc& desc);
 
         /// @brief Compile shader code
-        virtual unique_ptr<ShaderCompileData> compile(const ShaderCompileDesc& desc);
+        virtual std::expected<unique_ptr<ShaderCompileData>, ShaderCompileError> compile(const ShaderCompileDesc& desc);
 
     protected:
         virtual SlangProfileID retrieve_compile_profile(const ShaderCompileDesc& desc);
