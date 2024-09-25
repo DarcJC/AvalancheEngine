@@ -21,3 +21,9 @@ target_link_libraries(avalanche_shader_server
         core
         compiler-core
 )
+
+# Copy dynamic library to our binary directory
+add_custom_command(TARGET avalanche_shader_server POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        $<TARGET_FILE:slang> $<TARGET_FILE_DIR:avalanche_shader_server>
+)

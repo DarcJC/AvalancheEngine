@@ -11,6 +11,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # Building library and executable in same directory to avoid "dll not found" problem in Windows
 set(LIBRARY_OUTPUT_PATH "${CMAKE_BINARY_DIR}/Binaries")
 set(EXECUTABLE_OUTPUT_PATH "${CMAKE_BINARY_DIR}/Binaries")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/Binaries")
 
 # Set current root directory
 set(AVALANCHE_CMAKE_ROOT_DIR ${CMAKE_CURRENT_LIST_DIR})
