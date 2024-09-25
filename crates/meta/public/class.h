@@ -191,6 +191,7 @@ namespace avalanche {
         [[nodiscard]] const std::string& full_name_str() const override;
         [[nodiscard]] size_t hash() const override;
         [[nodiscard]] bool is_primitive_type() const override;
+        [[nodiscard]] const IMetadataKeyValueStorage* get_metadata() override;
 
     private:
         const char* m_name = nullptr;

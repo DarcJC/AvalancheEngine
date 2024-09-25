@@ -285,7 +285,7 @@ class CxxHeaderFileProcessor:
             return
 
         self.append_to_header(generate_constant_class_name(current_class))
-        self.append_to_source(generate_class_metadata_struct(current_class))
+        self.append_to_source(generate_metadata_struct(current_class, current_class))
         self.append_to_source(generate_metaclass(current_class))
         self._registered_classes.append(current_class)
 
@@ -341,14 +341,14 @@ def generate_metadata_container(value: any) -> str:
     return result
 
 
-def generate_class_metadata_struct(current_class: Class) -> str:
+def generate_metadata_struct(current_class: CommonBase, parent_class: Class) -> str:
     metadata = current_class.metadata or {}
     template = f"""
 namespace avalanche::generated {{
     struct {current_class.metastorage_name} : public IMetadataKeyValueStorage {{
         
         [[nodiscard]] Class* get_declaring_class() const override {{
-            return Class::for_name(class_name_v<{current_class.fully_qualified_name}>);
+            return Class::for_name(class_name_v<{parent_class.fully_qualified_name}>);
         }}
         
         void keys(size_t& o_num_keys, std::string_view const* & o_keys) const override {{
@@ -449,6 +449,11 @@ public:
     [[nodiscard]] const char* get_name() const override {{
         return "{field.display_name}";
     }}
+    
+    [[nodiscard]] const IMetadataKeyValueStorage* get_metadata() override {{
+        static avalanche::generated::{field.metastorage_name} s{{}};
+        return &s;
+    }}
 }};
 """
 
@@ -475,12 +480,20 @@ public:
     [[nodiscard]] uint64_t arg_hash() const override {{
         return arg_package_hash_v<{",".join([f"std::remove_cvref_t<{name}>" for name in method.param_typenames])}>;
     }}
+    
+    [[nodiscard]] const IMetadataKeyValueStorage* get_metadata() override {{
+        static avalanche::generated::{method.metastorage_name} s{{}};
+        return &s;
+    }}
 }};
 """
     return result
 
 def generate_metaclass(current_class: Class) -> str:
     template = f"""
+{"".join([generate_metadata_struct(field, current_class) for field in current_class.public_fields])}
+{"".join([generate_metadata_struct(method, current_class) for method in current_class.public_methods])}
+
 {generate_fields_class(current_class)}
 
 {generate_methods_class(current_class)}
@@ -531,6 +544,11 @@ public:
         }}""" if current_class.public_methods else "* methods = nullptr" };"""}
         num_result = num_methods;
         out_data = methods;
+    }}
+    
+    [[nodiscard]] const IMetadataKeyValueStorage* get_metadata() override {{
+        static avalanche::generated::{current_class.metastorage_name} s{{}};
+        return &s;
     }}
 }};
 """
