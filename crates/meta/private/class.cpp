@@ -99,7 +99,7 @@ namespace avalanche {
 
     bool PrimitiveClass::is_primitive_type() const { return true; }
 
-    const IMetadataKeyValueStorage *PrimitiveClass::get_metadata() { return nullptr; }
+    const IMetadataKeyValueStorage *PrimitiveClass::get_metadata() const { return nullptr; }
 
 }
 

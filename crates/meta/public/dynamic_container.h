@@ -1,11 +1,12 @@
 #pragma once
 
-#include "avalanche_meta_export.h"
-#include <assert.h>
 #include <bit>
 #include <concepts>
 #include <type_traits>
+#include "avalanche_meta_export.h"
 #include "class.h"
+
+#include <vector>
 
 
 namespace avalanche {
@@ -25,6 +26,9 @@ namespace avalanche {
 
         /// @brief Get value from key
         [[nodiscard]] virtual const DynamicContainerBase* get(std::string_view key) const = 0;
+
+        /// @brief A utility to provide modern C++ interface
+        void keys(std::vector<std::string_view>& o_vec) const;
     };
 
     class AVALANCHE_META_API DynamicContainerBase {
@@ -89,8 +93,8 @@ namespace avalanche {
 
             // Only reflected type can use cast_to
             if (clazz != nullptr) {
-                if (name == class_name_sv<T> || clazz->is_derived_from(class_name_sv<T>)) {
-                    return static_cast<T*>(get_storage_pointer());
+                if (name == class_name_sv<std::remove_cv_t<T>> || clazz->is_derived_from(class_name_sv<std::remove_cv_t<T>>)) {
+                    return static_cast<const T*>(get_storage_pointer());
                 }
             }
 

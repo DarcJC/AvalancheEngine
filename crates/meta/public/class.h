@@ -110,6 +110,7 @@ namespace avalanche {
     template <> struct class_name<double> { static constexpr const char* value = "double"; static constexpr bool primitive = true; };
     template <> struct class_name<long double> { static constexpr const char* value = "long double"; static constexpr bool primitive = true; };
     template <> struct class_name<void*> { static constexpr const char* value = "void*"; static constexpr bool primitive = true; };
+    template <> struct class_name<std::string_view> { static constexpr const char* value = "std::string_view"; static constexpr bool primitive = true; };
 
     template <typename T>
     constexpr const char* class_name_v = class_name<T>::value;
@@ -177,6 +178,7 @@ namespace avalanche {
             class_name_v<double>,
             class_name_v<long double>,
             class_name_v<void*>,
+            class_name_v<std::string_view>,
         };
         static constexpr size_t count = sizeof(value) / sizeof(const char*);
     };
@@ -191,7 +193,7 @@ namespace avalanche {
         [[nodiscard]] const std::string& full_name_str() const override;
         [[nodiscard]] size_t hash() const override;
         [[nodiscard]] bool is_primitive_type() const override;
-        [[nodiscard]] const IMetadataKeyValueStorage* get_metadata() override;
+        [[nodiscard]] const IMetadataKeyValueStorage* get_metadata() const override;
 
     private:
         const char* m_name = nullptr;

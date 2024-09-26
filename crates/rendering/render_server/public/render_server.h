@@ -31,8 +31,16 @@ namespace avalanche::rendering {
     };
 
     /// @reflect
+    /// @avalanche::begin
+    /// [qwq]
+    /// foo = "bar"
+    /// @avalanche::end
     struct TestData {
         /// @reflect
+        /// @avalanche::begin
+        /// [ui]
+        /// limit = [1, 5]
+        /// @avalanche::end
         uint32_t field1 = 0;
     private:
         IRenderServer* field2 = nullptr;

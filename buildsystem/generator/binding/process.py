@@ -334,9 +334,9 @@ def generate_metadata_container(value: any) -> str:
     elif value_type is bool:
         result += f"static const {BASE_TYPE_MAPS[value_type]} s_ = {'true' if value else 'false'};"
     elif isinstance(value, list):
-        result += f"static const char* s_ = {';'.join(map(lambda x: str(x), value))};"
+        result += f'static const std::string_view s_ = "{';'.join(map(lambda x: str(x), value))}";'
     elif isinstance(value, str):
-        result += f'static const char* s_ = "{value}";'
+        result += f'static const std::string_view s_ = "{value}";'
 
     return result
 
@@ -450,7 +450,7 @@ public:
         return "{field.display_name}";
     }}
     
-    [[nodiscard]] const IMetadataKeyValueStorage* get_metadata() override {{
+    [[nodiscard]] const IMetadataKeyValueStorage* get_metadata() const override {{
         static avalanche::generated::{field.metastorage_name} s{{}};
         return &s;
     }}
@@ -481,7 +481,7 @@ public:
         return arg_package_hash_v<{",".join([f"std::remove_cvref_t<{name}>" for name in method.param_typenames])}>;
     }}
     
-    [[nodiscard]] const IMetadataKeyValueStorage* get_metadata() override {{
+    [[nodiscard]] const IMetadataKeyValueStorage* get_metadata() const override {{
         static avalanche::generated::{method.metastorage_name} s{{}};
         return &s;
     }}
@@ -546,7 +546,7 @@ public:
         out_data = methods;
     }}
     
-    [[nodiscard]] const IMetadataKeyValueStorage* get_metadata() override {{
+    [[nodiscard]] const IMetadataKeyValueStorage* get_metadata() const override {{
         static avalanche::generated::{current_class.metastorage_name} s{{}};
         return &s;
     }}

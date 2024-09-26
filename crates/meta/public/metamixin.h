@@ -28,7 +28,7 @@ namespace avalanche {
     struct AVALANCHE_META_API HasMetadataMixin {
         virtual ~HasMetadataMixin() = default;
 
-        [[nodiscard]] virtual const class IMetadataKeyValueStorage* get_metadata() = 0;
+        [[nodiscard]] virtual const class IMetadataKeyValueStorage* get_metadata() const = 0;
     };
 
     struct AVALANCHE_META_API ManageMemoryMixin {
