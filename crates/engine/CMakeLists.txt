@@ -1,5 +1,11 @@
+set(FILESYSTEM_SOURCE
+        "private/filesystem/filesystem.cpp"
+        "private/filesystem/system_filesystem.cpp"
+)
+
 set(ENGINE_SOURCE
         "private/engine_entry.cpp"
+        ${FILESYSTEM_SOURCE}
 )
 
 avalanche_target(

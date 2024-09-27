@@ -24,14 +24,6 @@ int main(int argc, char* argv[]) {
     Chimera value = field->get_value<rendering::TestData&>(data);
     AVALANCHE_LOGGER.info("{}", value.as<uint32_t>().value());
 
-    std::vector<std::string_view> keys;
-    field->get_metadata()->keys(keys);
-    for (const auto& k : keys) {
-        AVALANCHE_LOGGER.info("{}", k);
-    }
-    const auto* qwq = field->get_metadata()->get("ui.limit")->cast_to<std::string_view>();
-    AVALANCHE_LOGGER.info("{}", qwq->data());
-
     auto* window = engine->create_window(window::WindowSettings {});
 
     ITickManager& ticker = ITickManager::get();

@@ -45,11 +45,26 @@ namespace avalanche {
             compile_request->addTranslationUnitSourceString(translation_unit_index, module.path.data(), module.code.data());
         }
 
+        // Compile
         const SlangResult compile_result = compile_request->compile();
         AVALANCHE_LOGGER.debug("Shader compilation result: \n\t{}", compile_request->getDiagnosticOutput());
         if (compile_result != SLANG_OK) {
             return std::unexpected(ShaderCompileError::InvalidCode);
         }
+
+        // Get linked program
+        Slang::ComPtr<slang::IComponentType> program;
+        compile_request->getProgram(program.writeRef());
+
+        // Get target code
+        Slang::ComPtr<slang::IBlob> target_code_blob, diagnostics_blob;
+        program->getTargetCode(0, target_code_blob.writeRef(), diagnostics_blob.writeRef());
+        const auto* code_bytes = static_cast<const std::byte*>(target_code_blob->getBufferPointer());
+        const size_t code_size = target_code_blob->getBufferSize();
+        vector<std::byte> code(std::span(const_cast<std::byte*>(code_bytes), code_size));
+
+        // Collect layout information
+        slang::ProgramLayout* program_layout = program->getLayout();
 
         return nullptr;
     }

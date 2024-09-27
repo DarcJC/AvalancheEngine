@@ -13,6 +13,8 @@ target_link_libraries(avalanche_shader_server
         PUBLIC
         avalanche::core
         avalanche::render_device
+        PRIVATE
+        avalanche::engine
 )
 
 target_link_libraries(avalanche_shader_server

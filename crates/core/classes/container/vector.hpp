@@ -6,6 +6,7 @@
 #include <initializer_list>
 #include <functional>
 #include <concepts>
+#include <span>
 #include "polyfill.h"
 #include "container/allocator.hpp"
 #include "container/exception.hpp"
@@ -27,6 +28,7 @@ namespace avalanche {
         using const_iterator_type = const_pointer_type;
         using reverse_iterator_type = std::reverse_iterator<iterator_type>;
         using const_reverse_iterator_type = std::reverse_iterator<const_iterator_type>;
+        using span_type = std::span<value_type>;
 
         static constexpr size_type npos = static_cast<size_type>(-1);
 
@@ -74,11 +76,17 @@ namespace avalanche {
         }
 
         template <typename U = value_type>
-        requires(std::is_convertible_v<U, T>)
-        vector_base(std::initializer_list<U> initializers) : m_length(0), m_allocator(allocator_type{}) {
-            resize_internal(initializers.size());
-
+        requires(std::is_convertible_v<U, value_type>)
+        vector_base(std::initializer_list<U> initializers) : vector_base(initializers.size()) {
             for (const U& value : initializers) {
+                m_allocator.construct(m_data + (m_length++), value);
+            }
+        }
+
+        template <typename U = value_type>
+        requires(std::is_convertible_v<U, value_type>)
+        explicit vector_base(const span_type& span) : vector_base(span.size()) {
+            for (const U& value : span) {
                 m_allocator.construct(m_data + (m_length++), value);
             }
         }
