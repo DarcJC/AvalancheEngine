@@ -51,6 +51,7 @@ namespace avalanche {
     };
 
     /// @brief Filesystem interface to unify file operations
+    /// @reflect
     class IFilesystem : public core::ServerCRTPBase<IFilesystem> {
     public:
         /// @brief Check does filesystem server initialized
@@ -66,3 +67,5 @@ namespace avalanche {
  * The filesystem module references the design of https://github.com/nextgeniuspro/vfspp .
  * Thanks nextgeniuspro.
  */
+
+#include "filesystem.generated.h"
