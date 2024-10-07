@@ -6,5 +6,15 @@
 namespace avalanche {
     class SystemFilesystem : public IFilesystem {
     public:
+        FileSystemResult initialize() override;
+
+        AVALANCHE_NO_DISCARD bool is_initialized() const override;
+
+        AVALANCHE_NO_DISCARD bool is_read_only() const override;
+
+        file_t open_file(path_t file_path) override;
+    };
+
+    class ISystemFile : public IFile {
     };
 } // namespace avalanche

@@ -1,5 +1,6 @@
 #pragma once
 #include <container/vector.hpp>
+#include <container/shared_ptr.hpp>
 #include <cstddef>
 #include <cstdint>
 #include <fstream>
@@ -48,17 +49,30 @@ namespace avalanche {
     class IFile {
     public:
         virtual ~IFile() = default;
+
+        /// @brief Check if readonly file
+        AVALANCHE_NO_DISCARD virtual bool is_read_only() const = 0;
+
     };
 
+    using file_t = shared_ptr<IFile>;
+
     /// @brief Filesystem interface to unify file operations
-    /// @reflect
-    class IFilesystem : public core::ServerCRTPBase<IFilesystem> {
+    class IFilesystem {
     public:
+        virtual ~IFilesystem() = default;
+
+        /// @brief Perform filesystem initialization, like loading file entries from an archive file.
+        virtual FileSystemResult initialize() = 0;
+
         /// @brief Check does filesystem server initialized
-        [[nodiscard]] virtual bool is_initialized() const = 0;
+        AVALANCHE_NO_DISCARD virtual bool is_initialized() const = 0;
 
         /// @brief Check if readonly filesystem
-        [[nodiscard]] virtual bool is_read_only() const = 0;
+        AVALANCHE_NO_DISCARD virtual bool is_read_only() const = 0;
+
+        /// @brief Open a file by path
+        virtual file_t open_file(path_t file_path) = 0;
     };
 
 } // namespace avalanche
