@@ -3,6 +3,7 @@
 
 namespace avalanche {
 
-    FileInfo::FileInfo(path_t path) {
+    string IFile::sha1() {
+        return "";
     }
 } // namespace avalanche

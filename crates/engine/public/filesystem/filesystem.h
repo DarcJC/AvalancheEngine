@@ -1,8 +1,10 @@
 #pragma once
-#include <container/vector.hpp>
 #include <container/shared_ptr.hpp>
+#include <container/string.hpp>
+#include <container/vector.hpp>
 #include <cstddef>
 #include <cstdint>
+#include <expected>
 #include <fstream>
 #include <manager/server_manager.h>
 #include <string_view>
@@ -14,6 +16,8 @@ namespace avalanche {
 
     enum class FileSystemResult {
         Success,
+        InternalError,
+        FileNotExist,
     };
 
     /// @brief File open mode
@@ -41,9 +45,11 @@ namespace avalanche {
         TruncateWrite = Write | Truncate,
     };
 
-    struct FileInfo final {
-    public:
-        explicit FileInfo(path_t path);
+    enum class FileType {
+        Unknown,
+        File,
+        Directory,
+        NoneExist,
     };
 
     class IFile {
@@ -53,6 +59,17 @@ namespace avalanche {
         /// @brief Check if readonly file
         AVALANCHE_NO_DISCARD virtual bool is_read_only() const = 0;
 
+        /// @brief Check if file current is valid
+        AVALANCHE_NO_DISCARD virtual bool is_valid() const = 0;
+
+        /// @brief Read file
+        AVALANCHE_NO_DISCARD virtual string read(FileOpenMode open_mode) = 0;
+
+        /// @brief Write into the file
+        AVALANCHE_NO_DISCARD virtual FileSystemResult write(std::string_view content, FileOpenMode open_mode) = 0;
+
+        /// @brief Get sha1 checksum
+        AVALANCHE_NO_DISCARD virtual string sha1();
     };
 
     using file_t = shared_ptr<IFile>;
@@ -73,6 +90,12 @@ namespace avalanche {
 
         /// @brief Open a file by path
         virtual file_t open_file(path_t file_path) = 0;
+
+        /// @brief Get given path type
+        virtual FileType get_path_type(path_t file_path) = 0;
+
+        /// @brief List file of given directory
+        virtual vector<string> list_directory(path_t file_path) = 0;
     };
 
 } // namespace avalanche

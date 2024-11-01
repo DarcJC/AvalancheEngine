@@ -17,3 +17,6 @@
 [submodule "thirdparty/rocksdb"]
 	path = thirdparty/rocksdb
 	url = https://github.com/facebook/rocksdb.git
+[submodule "thirdparty/cppfs"]
+	path = thirdparty/cppfs
+	url = https://github.com/cginternals/cppfs.git
